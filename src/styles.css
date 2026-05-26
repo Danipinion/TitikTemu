@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Outfit", "Inter", sans-serif;
+  --font-mono: "Courier New", Courier, monospace;
+
+  --color-dark-950: #060608;
+  --color-dark-900: #0A0A0F;
+  --color-dark-800: #0E0E14;
+  --color-dark-700: #12121B;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: #0A0A0F;
+  font-family: var(--font-sans);
+}
+
