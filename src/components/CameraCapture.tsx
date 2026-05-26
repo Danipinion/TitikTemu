@@ -3,9 +3,10 @@ import React, { useRef, useState, useEffect } from 'react';
 interface CameraCaptureProps {
   onCapture: (file: File, previewUrl: string) => void;
   onReset?: () => void;
+  children?: React.ReactNode;
 }
 
-export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onReset }) => {
+export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onReset, children }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -164,6 +165,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onReset
               className="w-full h-full object-cover"
             />
           )}
+
+          {preview && children}
 
           {/* Subtly animated scanline / journal noise overlay */}
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.5))] mix-blend-overlay opacity-80" />

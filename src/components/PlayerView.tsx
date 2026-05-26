@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CameraCapture } from './CameraCapture';
 import { useWebsocket } from '../hooks/useWebsocket';
 
@@ -71,6 +71,10 @@ export const PlayerView: React.FC = () => {
   const [isJoined, setIsJoined] = useState(false);
   const [activeChallengeIndex, setActiveChallengeIndex] = useState(0); // 0 = Waiting Lobby
 
+  // Face Registration states
+  const [registeredFace, setRegisteredFace] = useState<string | null>(null);
+  const [showFaceRegister, setShowFaceRegister] = useState(false);
+
   // Player state within the active challenge
   const [capturedFile, setCapturedFile] = useState<File | null>(null);
   const [capturedPreview, setCapturedPreview] = useState<string | null>(null);
@@ -78,11 +82,17 @@ export const PlayerView: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmittedCurrent, setHasSubmittedCurrent] = useState(false);
 
+  // Face verification / AI matching states
+  const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanCompleted, setScanCompleted] = useState(false);
+
   // Initialize Websocket hook
-  const { isConnected, error: wsError, sendSubmission } = useWebsocket({
+  const { isConnected, sendSubmission, playersList } = useWebsocket({
     pin,
     name,
     role: 'player',
+    identityPhoto: registeredFace || '',
     onChallengeChanged: (newIndex) => {
       setActiveChallengeIndex((prevIndex) => {
         // Only wipe progress if the host actually changed the challenge index
@@ -91,6 +101,8 @@ export const PlayerView: React.FC = () => {
           setCapturedPreview(null);
           setDeepAnswer('');
           setHasSubmittedCurrent(false);
+          setSelectedPartners([]);
+          setScanCompleted(false);
         }
         return newIndex;
       });
@@ -100,30 +112,37 @@ export const PlayerView: React.FC = () => {
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
     if (pin.length === 4 && name.trim()) {
-      setIsJoined(true);
+      setShowFaceRegister(true);
     }
   };
 
-  const handleCapture = (file: File, previewUrl: string) => {
-    setCapturedFile(file);
+  const handleCapture = (_file: File, previewUrl: string) => {
+    setCapturedFile(_file);
     setCapturedPreview(previewUrl);
   };
 
+  // Run mock AI face scanning on challenge capture
+  useEffect(() => {
+    if (capturedFile && !scanCompleted) {
+      setIsScanning(true);
+      const timer = setTimeout(() => {
+        setIsScanning(false);
+        setScanCompleted(true);
+      }, 1800);
+      return () => clearTimeout(timer);
+    }
+  }, [capturedFile, scanCompleted]);
+
   const handleSubmit = async () => {
-    if (!capturedFile || !deepAnswer.trim()) return;
+    if (!capturedFile || !deepAnswer.trim() || selectedPartners.length === 0) return;
 
     setIsSubmitting(true);
     try {
-      // Simulate file upload (Nextcloud API or Supabase Storage)
-      // In production, you would perform:
-      // const { data, error } = await supabase.storage.from('photos').upload(`${pin}/${name}_ch${activeChallengeIndex}.jpg`, capturedFile);
-      // const photoUrl = supabase.storage.from('photos').getPublicUrl(data.path).data.publicUrl;
-      
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       const simulatedPhotoUrl = capturedPreview || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e';
 
       // Send via WebSocket to sync Host board instantly
-      sendSubmission(activeChallengeIndex, simulatedPhotoUrl, deepAnswer);
+      sendSubmission(activeChallengeIndex, simulatedPhotoUrl, deepAnswer, [name, ...selectedPartners]);
       
       setHasSubmittedCurrent(true);
     } catch (err) {
@@ -132,6 +151,70 @@ export const PlayerView: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Rendering screen 1b: Face Registration selfie
+  if (showFaceRegister) {
+    return (
+      <div className="min-h-screen bg-[#0D0D11] text-zinc-100 flex flex-col justify-between p-6 font-sans relative overflow-hidden">
+        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[60%] rounded-full bg-violet-900/10 blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[50%] rounded-full bg-rose-900/10 blur-[100px]" />
+
+        <div className="w-full flex-grow flex flex-col justify-center max-w-sm mx-auto space-y-6 z-10">
+          <div className="text-center">
+            <span className="text-[10px] font-mono text-violet-400 tracking-widest uppercase">TAHAP REGISTRASI WAJAH</span>
+            <h2 className="text-2xl font-serif text-white italic mt-1">Daftarkan Wajahmu</h2>
+            <p className="text-xs text-zinc-400 mt-2 max-w-xs mx-auto leading-relaxed">
+              Ambil selfie mandiri untuk mendaftarkan wajah unikmu di sistem AI TitikTemu sebelum mulai bonding.
+            </p>
+          </div>
+
+          {!registeredFace ? (
+            <div className="space-y-4">
+              <CameraCapture 
+                onCapture={handleCapture} 
+              />
+            </div>
+          ) : (
+            <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-3xl p-6 text-center space-y-6 animate-[fadeIn_0.4s_ease-out] shadow-2xl">
+              <div className="w-40 h-40 mx-auto rounded-full overflow-hidden border-2 border-emerald-500/50 relative shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                <img src={registeredFace} alt="Registered Selfie" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-emerald-950/20 flex items-center justify-center">
+                  <span className="text-4xl text-emerald-400 animate-pulse">✓</span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-xs font-mono text-emerald-400 uppercase tracking-widest">VERIFIKASI WAJAH BERHASIL</span>
+                <p className="text-xs font-sans text-zinc-300">Model AI berhasil meregistrasi wajah {name}</p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setRegisteredFace(null)}
+                  className="flex-1 py-3 bg-zinc-900 border border-white/10 text-zinc-400 font-semibold text-xs rounded-xl hover:bg-zinc-800 transition-colors"
+                >
+                  Ulangi Foto
+                </button>
+                <button
+                  onClick={() => {
+                    setIsJoined(true);
+                    setShowFaceRegister(false);
+                  }}
+                  className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all"
+                >
+                  Masuk Sesi Bonding
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="text-center py-4 z-10">
+          <p className="text-[10px] font-mono text-zinc-600">TitikTemu • HIMA TRPL 2026</p>
+        </div>
+      </div>
+    );
+  }
 
   // Rendering screen 1: Join Lobby Form
   if (!isJoined) {
@@ -210,21 +293,50 @@ export const PlayerView: React.FC = () => {
         <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[40%] rounded-full bg-violet-900/10 blur-[80px]" />
         
         <div className="w-full flex-grow flex flex-col justify-center items-center text-center max-w-sm mx-auto">
-          {/* Floating reflective disk representing 'lobby waiting' */}
-          <div className="relative w-40 h-40 rounded-full bg-gradient-to-tr from-violet-950/40 via-indigo-900/40 to-rose-950/40 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] flex items-center justify-center mb-8 animate-[pulse_3s_infinite]">
-            <div className="w-32 h-32 rounded-full border border-white/5 bg-[#0D0D11] flex flex-col items-center justify-center p-4">
-              <span className="text-4xl animate-bounce">☕</span>
+          {/* Floating reflective disk */}
+          <div className="relative w-36 h-36 rounded-full bg-gradient-to-tr from-violet-950/40 via-indigo-900/40 to-rose-950/40 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] flex items-center justify-center mb-6 animate-[pulse_3s_infinite]">
+            <div className="w-28 h-28 rounded-full border border-white/5 bg-[#0D0D11] flex flex-col items-center justify-center p-4">
+              {registeredFace ? (
+                <img src={registeredFace} alt="My profile selfie" className="w-full h-full object-cover rounded-full" />
+              ) : (
+                <span className="text-4xl animate-bounce">☕</span>
+              )}
             </div>
-            {/* Spinning orbit */}
             <div className="absolute inset-0 rounded-full border-t border-indigo-500/40 animate-spin" />
           </div>
 
-          <h2 className="text-2xl font-serif text-white italic mb-2">Halo, {name}!</h2>
-          <p className="text-sm text-zinc-400 max-w-xs leading-relaxed">
-            Kamu udah masuk di Room <span className="font-mono text-violet-400 font-bold bg-violet-950/40 px-2 py-0.5 rounded border border-violet-800/30">{pin}</span>.
+          <h2 className="text-2xl font-serif text-white italic mb-1">Halo, {name}!</h2>
+          <p className="text-xs text-zinc-400 max-w-xs leading-relaxed">
+            Kamu berhasil terdaftar di Room <span className="font-mono text-violet-400 font-bold bg-violet-950/40 px-2 py-0.5 rounded border border-violet-800/30">{pin}</span>.
           </p>
-          <div className="mt-6 px-4 py-2 rounded-full bg-emerald-950/20 border border-emerald-500/20 text-emerald-400 text-xs font-mono animate-pulse flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Connected, waiting for Host
+
+          <div className="mt-4 px-4 py-2 rounded-full bg-emerald-950/20 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono animate-pulse flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Terhubung, Menunggu Host Memulai...
+          </div>
+
+          {/* List of other connected players in lobby */}
+          <div className="mt-8 w-full">
+            <span className="block text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-3 text-left">
+              Teman Himpunan di Lobby ({playersList.length})
+            </span>
+            {playersList.length <= 1 ? (
+              <p className="text-xs font-serif text-zinc-600 italic text-left">Belum ada orang lain yang bergabung...</p>
+            ) : (
+              <div className="grid grid-cols-4 gap-3 bg-white/5 border border-white/5 rounded-2xl p-4">
+                {playersList.filter(p => p.name !== name).map((player, idx) => (
+                  <div key={idx} className="flex flex-col items-center space-y-1 animate-[fadeIn_0.3s_ease-out]">
+                    <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-zinc-900 relative">
+                      {player.identityPhoto ? (
+                        <img src={player.identityPhoto} alt={player.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[10px] text-zinc-600 flex items-center justify-center h-full font-mono uppercase">{player.name.slice(0, 2)}</span>
+                      )}
+                    </div>
+                    <span className="text-[9px] font-mono text-zinc-400 truncate max-w-full text-center">{player.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -245,7 +357,7 @@ export const PlayerView: React.FC = () => {
 
         <div className="w-full flex-grow flex flex-col justify-center items-center text-center max-w-sm mx-auto">
           {/* Polaroid Mini Preview */}
-          <div className="w-48 bg-zinc-900 border border-white/10 rounded-xl p-3 shadow-2xl transform rotate-[-2deg] mb-6">
+          <div className="w-48 bg-zinc-900 border border-white/10 rounded-xl p-3 shadow-2xl transform rotate-[-2deg] mb-6 relative">
             <div className="w-full aspect-[4/5] bg-black rounded overflow-hidden">
               {capturedPreview && (
                 <img src={capturedPreview} alt="Captured" className="w-full h-full object-cover grayscale brightness-90 opacity-70" />
@@ -302,42 +414,164 @@ export const PlayerView: React.FC = () => {
           </p>
         </div>
 
-        {/* Live Camera Viewfinder */}
-        <CameraCapture onCapture={handleCapture} onReset={() => setCapturedFile(null)} />
+        {/* Live Camera Viewfinder with scanning overlay */}
+        <div className="relative">
+          <CameraCapture 
+            onCapture={handleCapture} 
+            onReset={() => {
+              setCapturedFile(null);
+              setCapturedPreview(null);
+              setScanCompleted(false);
+              setSelectedPartners([]);
+            }}
+          >
+            {/* Simulated green face bounding boxes overlay */}
+            {scanCompleted && (
+              <div className="absolute inset-0 pointer-events-none z-10">
+                {/* Box 1: The Player themselves */}
+                <div className="absolute top-[28%] left-[15%] w-[32%] h-[32%] border-2 border-emerald-400 rounded-2xl shadow-[0_0_15px_rgba(52,211,153,0.5)]">
+                  <span className="absolute -top-6 left-0 bg-emerald-500 text-white font-mono text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">
+                    {name} (99% Match)
+                  </span>
+                </div>
 
-        {/* Deep Question Form */}
-        {capturedFile && (
-          <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl space-y-4 animate-[fadeIn_0.5s_ease-out]">
-            <div>
-              <span className="text-[10px] font-mono tracking-widest text-rose-300 uppercase">Pertanyaan Mendalam</span>
-              <p className="mt-1.5 text-xs text-rose-100 font-serif italic leading-relaxed">
-                "{currentChallenge?.question}"
-              </p>
+                {/* Box 2: The selected partner */}
+                {selectedPartners.length > 0 && (
+                  <div className="absolute top-[34%] right-[15%] w-[32%] h-[32%] border-2 border-indigo-400 rounded-2xl shadow-[0_0_15px_rgba(129,140,248,0.5)] animate-[pulse_2s_infinite]">
+                    <span className="absolute -top-6 left-0 bg-indigo-500 text-white font-mono text-[8px] font-bold px-1.5 py-0.5 rounded uppercase max-w-[100px] truncate">
+                      {selectedPartners[0]} (92% Match)
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </CameraCapture>
+
+          {/* AI scanning overlay */}
+          {isScanning && capturedPreview && (
+            <div className="absolute inset-0 bg-[#0A0A0F]/90 rounded-2xl flex flex-col items-center justify-center p-4 z-20 overflow-hidden border border-white/10 animate-[fadeIn_0.2s_ease-out]">
+              <div className="w-full flex-grow bg-zinc-950 rounded-xl relative overflow-hidden flex items-center justify-center">
+                <img src={capturedPreview} alt="Scan preview" className="w-full h-full object-cover opacity-45 grayscale" />
+                {/* Glowing Laser Scan line */}
+                <div className="absolute left-0 right-0 h-1 bg-rose-500 shadow-[0_0_15px_#f43f5e] top-0 animate-[scan_1.8s_infinite_ease-in-out]" />
+              </div>
+              <div className="mt-4 text-center space-y-1.5">
+                <span className="text-[10px] font-mono tracking-widest text-rose-400 uppercase animate-pulse">🤖 ANALYZING FACES...</span>
+                <p className="text-[10px] font-sans text-zinc-400">Model AI sedang mendeteksi jumlah wajah...</p>
+              </div>
             </div>
-            
-            <textarea
-              required
-              rows={3}
-              value={deepAnswer}
-              onChange={(e) => setDeepAnswer(e.target.value)}
-              placeholder="Tuliskan jawaban paling jujur dari hatimu di sini..."
-              className="w-full bg-[#12121A]/60 border border-white/10 focus:border-rose-400/40 rounded-xl p-3 text-sm text-zinc-200 focus:outline-none transition-colors placeholder:text-zinc-600 resize-none font-sans"
-            />
+          )}
+        </div>
 
-            <button
-              onClick={handleSubmit}
-              disabled={isSubmitting || !deepAnswer.trim()}
-              className="w-full py-3.5 bg-gradient-to-r from-rose-600 to-violet-600 hover:from-rose-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs rounded-xl border border-rose-400/20 shadow-[0_0_15px_rgba(244,63,94,0.3)] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Mengupload Foto Himpunan...
-                </>
+        {/* Deep Question and Partner verification Form */}
+        {capturedFile && scanCompleted && (
+          <div className="space-y-4 animate-[fadeIn_0.5s_ease-out]">
+            
+            {/* Checklist of partners in the room */}
+            <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl space-y-3">
+              <span className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase">Verifikasi Partner Foto (Minimal 1)</span>
+              <p className="text-[11px] text-zinc-400 leading-normal">
+                Siapa kawan HIMA TRPL yang berfoto bersamamu dalam misi ini?
+              </p>
+              
+              <div className="flex flex-wrap gap-2 pt-1">
+                {playersList.filter(p => p.name !== name).map((p, idx) => {
+                  const isSelected = selectedPartners.includes(p.name);
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedPartners(prev => prev.filter(n => n !== p.name));
+                        } else {
+                          setSelectedPartners(prev => [...prev, p.name]);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-xl border text-[11px] font-medium transition-all flex items-center gap-1.5 ${
+                        isSelected 
+                          ? 'bg-rose-500/20 border-rose-500 text-rose-300 shadow-[0_0_10px_rgba(244,63,94,0.15)]' 
+                          : 'bg-[#12121A]/60 border-white/5 text-zinc-400 hover:border-white/10'
+                      }`}
+                    >
+                      <span className="w-4 h-4 rounded-full overflow-hidden border border-white/10 flex-shrink-0">
+                        {p.identityPhoto ? (
+                          <img src={p.identityPhoto} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="bg-zinc-800 text-[6px] text-zinc-500 h-full w-full flex items-center justify-center font-mono">P</span>
+                        )}
+                      </span>
+                      {p.name}
+                    </button>
+                  );
+                })}
+
+                {/* Failsafe Demo Partner button if testing alone */}
+                {playersList.length <= 1 && (
+                  <button
+                    onClick={() => {
+                      const demoName = 'Bagas (Demo)';
+                      if (selectedPartners.includes(demoName)) {
+                        setSelectedPartners([]);
+                      } else {
+                        setSelectedPartners([demoName]);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-xl border text-[11px] font-medium transition-all flex items-center gap-1.5 ${
+                      selectedPartners.includes('Bagas (Demo)') 
+                        ? 'bg-rose-500/20 border-rose-500 text-rose-300 shadow-[0_0_10px_rgba(244,63,94,0.15)]' 
+                        : 'bg-[#12121A]/60 border-white/5 text-zinc-400 hover:border-white/10'
+                    }`}
+                  >
+                    <span className="w-4 h-4 rounded-full overflow-hidden border border-white/10 flex items-center justify-center bg-zinc-800 text-[8px] flex-shrink-0 text-zinc-400">🤖</span>
+                    Bagas (Demo AI)
+                  </button>
+                )}
+              </div>
+
+              {/* Status Warning / Success */}
+              {selectedPartners.length === 0 ? (
+                <div className="p-2.5 bg-rose-950/20 border border-rose-500/20 rounded-xl text-rose-400 text-[10px] font-mono">
+                  ⚠️ Deteksi AI: Hanya 1 orang ditemukan (Minimal wajib 2 orang). Submisi ditolak.
+                </div>
               ) : (
-                'Kirim Jawaban & Selesaikan Misi'
+                <div className="p-2.5 bg-emerald-950/20 border border-emerald-500/20 rounded-xl text-emerald-400 text-[10px] font-mono">
+                  ✅ Deteksi AI: Terdeteksi 2 wajah! Verifikasi Berhasil.
+                </div>
               )}
-            </button>
+            </div>
+
+            <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl space-y-3">
+              <div>
+                <span className="text-[10px] font-mono tracking-widest text-rose-300 uppercase">Pertanyaan Mendalam</span>
+                <p className="mt-1.5 text-xs text-rose-100 font-serif italic leading-relaxed">
+                  "{currentChallenge?.question}"
+                </p>
+              </div>
+              
+              <textarea
+                required
+                rows={3}
+                value={deepAnswer}
+                onChange={(e) => setDeepAnswer(e.target.value)}
+                placeholder="Tuliskan jawaban paling jujur dari hatimu di sini..."
+                className="w-full bg-[#12121A]/60 border border-white/10 focus:border-rose-400/40 rounded-xl p-3 text-sm text-zinc-200 focus:outline-none transition-colors placeholder:text-zinc-600 resize-none font-sans"
+              />
+
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting || !deepAnswer.trim() || selectedPartners.length === 0}
+                className="w-full py-3.5 bg-gradient-to-r from-rose-600 to-violet-600 hover:from-rose-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs rounded-xl border border-rose-400/20 shadow-[0_0_15px_rgba(244,63,94,0.3)] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Mengupload Foto Himpunan...
+                  </>
+                ) : (
+                  'Kirim Jawaban & Selesaikan Misi'
+                )}
+              </button>
+            </div>
           </div>
         )}
       </div>

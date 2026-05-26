@@ -6,6 +6,7 @@ interface PlayerSession {
   name: string;
   socket: WebSocket;
   joinedAt: Date;
+  identityPhoto?: string;
 }
 
 interface RoomSession {
@@ -57,7 +58,7 @@ wss.on('connection', (ws: WebSocket) => {
   ws.on('message', (message: string) => {
     try {
       const payload = JSON.parse(message);
-      const { type, pin, name, challengeIndex, challengeId, photoUrl, answer } = payload;
+      const { type, pin, name, challengeIndex, challengeId, photoUrl, answer, identityPhoto, detectedPlayers } = payload;
 
       switch (type) {
         case 'create-room': {
@@ -103,6 +104,7 @@ wss.on('connection', (ws: WebSocket) => {
             name,
             socket: ws,
             joinedAt: new Date(),
+            identityPhoto: identityPhoto || '',
           });
 
           console.log(`Player [${name}] joined Room [${pin}].`);
@@ -115,12 +117,16 @@ wss.on('connection', (ws: WebSocket) => {
             currentChallengeIndex: room.currentChallengeIndex 
           });
 
-          // Notify Host of the new player
+          // Notify Host of the new player list (with photo metadata)
           if (room.hostSocket) {
+            const playersList = Array.from(room.players.values()).map(p => ({
+              name: p.name,
+              identityPhoto: p.identityPhoto
+            }));
             send(room.hostSocket, {
               type: 'player-joined',
               name,
-              playersList: Array.from(room.players.keys()),
+              playersList,
             });
           }
           break;
@@ -156,7 +162,7 @@ wss.on('connection', (ws: WebSocket) => {
           if (room) {
             console.log(`Player [${userName}] in Room [${userPin}] submitted challenge ${challengeId}.`);
 
-            // Notify host with player's submission details (to trigger animation/update count)
+            // Notify host with player's submission details (with detected player tags)
             if (room.hostSocket) {
               send(room.hostSocket, {
                 type: 'submission-received',
@@ -164,6 +170,7 @@ wss.on('connection', (ws: WebSocket) => {
                 challengeId,
                 photoUrl,
                 answer,
+                detectedPlayers: detectedPlayers || [],
               });
             }
           }
@@ -188,10 +195,14 @@ wss.on('connection', (ws: WebSocket) => {
         
         // Notify Host
         if (room.hostSocket) {
+          const playersList = Array.from(room.players.values()).map(p => ({
+            name: p.name,
+            identityPhoto: p.identityPhoto
+          }));
           send(room.hostSocket, {
             type: 'player-left',
             name: userName,
-            playersList: Array.from(room.players.keys()),
+            playersList,
           });
         }
       }

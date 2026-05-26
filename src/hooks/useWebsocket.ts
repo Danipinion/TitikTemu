@@ -2,19 +2,26 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 export type SocketRole = 'host' | 'player';
 
+export interface ConnectedPlayer {
+  name: string;
+  identityPhoto: string;
+}
+
 export interface UseWebsocketOptions {
   url?: string;
   pin: string;
   name?: string;
   role: SocketRole;
+  identityPhoto?: string;
   onChallengeChanged?: (challengeIndex: number) => void;
-  onPlayerJoined?: (name: string, playersList: string[]) => void;
-  onPlayerLeft?: (name: string, playersList: string[]) => void;
+  onPlayerJoined?: (name: string, playersList: ConnectedPlayer[]) => void;
+  onPlayerLeft?: (name: string, playersList: ConnectedPlayer[]) => void;
   onSubmissionReceived?: (submission: {
     playerName: string;
     challengeId: number;
     photoUrl: string;
     answer: string;
+    detectedPlayers: string[];
   }) => void;
 }
 
@@ -23,6 +30,7 @@ export const useWebsocket = ({
   pin,
   name,
   role,
+  identityPhoto,
   onChallengeChanged,
   onPlayerJoined,
   onPlayerLeft,
@@ -31,7 +39,7 @@ export const useWebsocket = ({
   const ws = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [playersList, setPlayersList] = useState<string[]>([]);
+  const [playersList, setPlayersList] = useState<ConnectedPlayer[]>([]);
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState<number>(0);
   const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -73,7 +81,7 @@ export const useWebsocket = ({
       if (role === 'host') {
         socket.send(JSON.stringify({ type: 'create-room', pin }));
       } else {
-        socket.send(JSON.stringify({ type: 'join-room', pin, name }));
+        socket.send(JSON.stringify({ type: 'join-room', pin, name, identityPhoto }));
       }
     };
 
@@ -123,6 +131,7 @@ export const useWebsocket = ({
                 challengeId: payload.challengeId,
                 photoUrl: payload.photoUrl,
                 answer: payload.answer,
+                detectedPlayers: payload.detectedPlayers || [],
               });
             }
             break;
@@ -152,7 +161,7 @@ export const useWebsocket = ({
         connect();
       }, 3000);
     };
-  }, [url, pin, name, role]);
+  }, [url, pin, name, role, identityPhoto]);
 
   // Trigger state transition to next challenge (Host only)
   const sendNextChallenge = useCallback((challengeIndex: number) => {
@@ -171,7 +180,7 @@ export const useWebsocket = ({
   }, [pin, role]);
 
   // Submit response (Player only)
-  const sendSubmission = useCallback((challengeId: number, photoUrl: string, answer: string) => {
+  const sendSubmission = useCallback((challengeId: number, photoUrl: string, answer: string, detectedPlayers: string[]) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN && role === 'player') {
       ws.current.send(
         JSON.stringify({
@@ -181,6 +190,7 @@ export const useWebsocket = ({
           challengeId,
           photoUrl,
           answer,
+          detectedPlayers,
         })
       );
     } else {

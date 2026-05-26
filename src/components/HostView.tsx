@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useWebsocket } from '../hooks/useWebsocket';
+import type { ConnectedPlayer } from '../hooks/useWebsocket';
 
 interface Submission {
   playerName: string;
   challengeId: number;
   photoUrl: string;
   answer: string;
+  detectedPlayers?: string[];
 }
 
 const CHALLENGES = [
@@ -72,22 +74,22 @@ const CHALLENGES = [
 ];
 
 export const HostView: React.FC = () => {
-  const [pin, setPin] = useState('4829'); // Predefined or randomly generated room PIN
+  const pin = '4829'; // Predefined or randomly generated room PIN
   const [isCreated, setIsCreated] = useState(false);
-  const [players, setPlayers] = useState<string[]>([]);
+  const [players, setPlayers] = useState<ConnectedPlayer[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [activeStage, setActiveStage] = useState(0); // 0 = Lobby, 1-10 = Game, 11 = Climax
   
   // Selected submission for reading modal
   const [selectedSub, setSelectedSub] = useState<Submission | null>(null);
 
-  const { isConnected, sendNextChallenge } = useWebsocket({
+  const { sendNextChallenge } = useWebsocket({
     pin,
     role: 'host',
-    onPlayerJoined: (name, list) => {
+    onPlayerJoined: (_, list) => {
       setPlayers(list);
     },
-    onPlayerLeft: (name, list) => {
+    onPlayerLeft: (_, list) => {
       setPlayers(list);
     },
     onSubmissionReceived: (submission) => {
@@ -193,14 +195,25 @@ export const HostView: React.FC = () => {
                 <p className="text-sm font-serif italic text-zinc-500">Menunggu kawan-kawan masuk...</p>
               </div>
             ) : (
-              <div className="flex-wrap flex gap-3 overflow-y-auto max-h-[50vh] p-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto max-h-[50vh] p-1">
                 {players.map((p, idx) => (
                   <div
                     key={idx}
-                    className="px-4 py-2.5 bg-zinc-900 border border-white/10 rounded-xl text-sm font-sans font-medium text-zinc-200 flex items-center gap-2 shadow-lg animate-[fadeIn_0.3s_ease-out]"
+                    className="bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-lg flex flex-col items-center gap-2.5 animate-[fadeIn_0.3s_ease-out]"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    {p}
+                    <div className="w-16 h-16 rounded-full overflow-hidden border border-white/10 bg-zinc-950 relative">
+                      {p.identityPhoto ? (
+                        <img src={p.identityPhoto} alt={p.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-2xl text-zinc-500 h-full w-full flex items-center justify-center font-mono uppercase">
+                          {p.name.slice(0,2)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span className="text-xs font-semibold text-zinc-200">{p.name}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -280,7 +293,7 @@ export const HostView: React.FC = () => {
                 {currentSubmissions.map((sub, idx) => (
                   <div
                     key={idx}
-                    className="bg-zinc-900 border border-white/5 rounded-xl p-2.5 shadow-xl hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
+                    className="bg-zinc-900 border border-white/5 rounded-xl p-2.5 shadow-xl hover:scale-[1.02] transition-transform duration-300 cursor-pointer flex flex-col justify-between"
                     onClick={() => setSelectedSub(sub)}
                   >
                     <div className="aspect-[4/5] bg-black rounded-lg overflow-hidden relative">
@@ -288,6 +301,13 @@ export const HostView: React.FC = () => {
                       <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/75 backdrop-blur-md rounded text-[9px] font-mono text-zinc-300">
                         {sub.playerName}
                       </div>
+
+                      {/* Display face detection tags */}
+                      {sub.detectedPlayers && sub.detectedPlayers.length > 1 && (
+                        <div className="absolute bottom-2 left-2 right-2 px-1.5 py-0.5 bg-indigo-950/80 backdrop-blur-md rounded text-[8px] font-mono text-indigo-300 border border-indigo-500/20 truncate">
+                          👥 {sub.detectedPlayers.join(', ')}
+                        </div>
+                      )}
                     </div>
                     <p className="mt-2 text-[10px] font-serif italic text-zinc-400 line-clamp-2">
                       "{sub.answer}"
@@ -317,6 +337,21 @@ export const HostView: React.FC = () => {
                     <span className="text-[10px] font-mono text-indigo-400 tracking-wider">OLEH PESERTA</span>
                     <h3 className="text-xl font-serif text-white italic mt-0.5">{selectedSub.playerName}</h3>
                   </div>
+
+                  {/* AI match layout */}
+                  {selectedSub.detectedPlayers && selectedSub.detectedPlayers.length > 0 && (
+                    <div>
+                      <span className="text-[10px] font-mono text-emerald-400 tracking-wider">AI FACE DETECTION MATCH ({selectedSub.detectedPlayers.length})</span>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {selectedSub.detectedPlayers.map((pn, pidx) => (
+                          <span key={pidx} className="px-2 py-0.5 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-[10px] font-mono text-emerald-300">
+                            ✓ {pn}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <span className="text-[10px] font-mono text-rose-400 tracking-wider">JAWABAN MENDALAM</span>
                     <p className="text-sm font-sans text-zinc-300 leading-relaxed italic mt-1 bg-white/5 border border-white/5 rounded-xl p-4">
@@ -382,8 +417,15 @@ export const HostView: React.FC = () => {
                 {/* Visual Polaroid Tape Indicator */}
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-5 bg-white/10 backdrop-blur-md border border-white/20 rotate-[-3deg] z-10 opacity-70 group-hover:opacity-100 transition-opacity" />
 
-                <div className="aspect-[4/5] bg-black rounded-lg overflow-hidden">
+                <div className="aspect-[4/5] bg-black rounded-lg overflow-hidden relative">
                   <img src={sub.photoUrl} alt="Polaroid submission" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  
+                  {/* Face recognition tags overlay */}
+                  {sub.detectedPlayers && sub.detectedPlayers.length > 1 && (
+                    <div className="absolute bottom-2 left-2 right-2 px-1.5 py-0.5 bg-indigo-950/80 backdrop-blur-md rounded text-[8px] font-mono text-indigo-300 border border-indigo-500/20 truncate">
+                      👥 {sub.detectedPlayers.join(', ')}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4 space-y-2">
@@ -419,6 +461,21 @@ export const HostView: React.FC = () => {
                   <span className="text-[10px] font-mono text-indigo-400 tracking-wider">KARYA OLEH</span>
                   <h3 className="text-xl font-serif text-white italic mt-0.5">{selectedSub.playerName}</h3>
                 </div>
+
+                {/* AI match layout */}
+                {selectedSub.detectedPlayers && selectedSub.detectedPlayers.length > 0 && (
+                  <div>
+                    <span className="text-[10px] font-mono text-emerald-400 tracking-wider">AI FACE DETECTION MATCH ({selectedSub.detectedPlayers.length})</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {selectedSub.detectedPlayers.map((pn, pidx) => (
+                        <span key={pidx} className="px-2 py-0.5 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-[10px] font-mono text-emerald-300">
+                          ✓ {pn}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <span className="text-[10px] font-mono text-rose-400 tracking-wider">JAWABAN DEEP DI FORUM</span>
                   <p className="text-sm font-sans text-zinc-300 leading-relaxed italic mt-1 bg-white/5 border border-white/5 rounded-xl p-4">
