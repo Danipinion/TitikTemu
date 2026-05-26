@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWebsocket } from '../hooks/useWebsocket';
 import type { ConnectedPlayer } from '../hooks/useWebsocket';
 
@@ -79,6 +79,7 @@ export const HostView: React.FC = () => {
   const [players, setPlayers] = useState<ConnectedPlayer[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [activeStage, setActiveStage] = useState(0); // 0 = Lobby, 1-10 = Game, 11 = Climax
+  const [countdown, setCountdown] = useState<number | null>(null);
   
   // Selected submission for reading modal
   const [selectedSub, setSelectedSub] = useState<Submission | null>(null);
@@ -109,6 +110,34 @@ export const HostView: React.FC = () => {
 
   const currentChallenge = activeStage >= 1 && activeStage <= 10 ? CHALLENGES[activeStage - 1] : null;
   const currentSubmissions = submissions.filter((s) => s.challengeId === activeStage);
+
+  // Auto-next countdown when all connected players have submitted their answers
+  useEffect(() => {
+    if (
+      activeStage >= 1 &&
+      activeStage <= 10 &&
+      players.length > 0 &&
+      currentSubmissions.length === players.length
+    ) {
+      setCountdown(5);
+    } else {
+      setCountdown(null);
+    }
+  }, [currentSubmissions.length, players.length, activeStage]);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown === 0) {
+      handleNextChallenge();
+      setCountdown(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setCountdown(countdown - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
 
   // Screen 1: Start Room Configuration
   if (!isCreated) {
@@ -239,9 +268,15 @@ export const HostView: React.FC = () => {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <div className="px-4 py-2 bg-zinc-900 border border-white/10 rounded-xl text-xs font-mono text-zinc-400">
-              Submitted: {currentSubmissions.length} / {players.length} Players
-            </div>
+            {countdown !== null ? (
+              <div className="px-4 py-2 bg-rose-950/60 border border-rose-500/30 text-rose-300 rounded-xl text-xs font-mono animate-pulse">
+                ⏱️ Auto-Next: {countdown}s
+              </div>
+            ) : (
+              <div className="px-4 py-2 bg-zinc-900 border border-white/10 rounded-xl text-xs font-mono text-zinc-400">
+                Submitted: {currentSubmissions.length} / {players.length} Players
+              </div>
+            )}
             <button
               onClick={handleNextChallenge}
               className="px-6 py-2.5 bg-gradient-to-r from-rose-600 to-violet-600 hover:from-rose-500 hover:to-violet-500 text-white font-semibold text-xs rounded-xl border border-rose-400/20 shadow-[0_0_15px_rgba(244,63,94,0.2)] transition-all"

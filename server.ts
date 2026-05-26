@@ -14,6 +14,7 @@ interface RoomSession {
   hostSocket: WebSocket | null;
   currentChallengeIndex: number; // 0 = Lobby, 1-10 = Challenges, 11 = Climax Gallery
   players: Map<string, PlayerSession>; // Map name -> PlayerSession
+  submissions: any[];
 }
 
 const rooms = new Map<string, RoomSession>();
@@ -71,6 +72,7 @@ wss.on('connection', (ws: WebSocket) => {
               hostSocket: ws,
               currentChallengeIndex: 0,
               players: new Map(),
+              submissions: [],
             });
             console.log(`Room [${pin}] created by Host.`);
           } else {
@@ -114,7 +116,8 @@ wss.on('connection', (ws: WebSocket) => {
             type: 'joined-success', 
             pin, 
             name, 
-            currentChallengeIndex: room.currentChallengeIndex 
+            currentChallengeIndex: room.currentChallengeIndex,
+            submissions: room.currentChallengeIndex === 11 ? room.submissions : undefined
           });
 
           // Notify Host of the new player list (with photo metadata)
@@ -147,6 +150,7 @@ wss.on('connection', (ws: WebSocket) => {
             broadcastToRoom(userPin, {
               type: 'challenge-changed',
               challengeIndex,
+              submissions: challengeIndex === 11 ? room.submissions : undefined
             });
           }
           break;
@@ -162,15 +166,20 @@ wss.on('connection', (ws: WebSocket) => {
           if (room) {
             console.log(`Player [${userName}] in Room [${userPin}] submitted challenge ${challengeId}.`);
 
+            const newSubmission = {
+              playerName: userName,
+              challengeId,
+              photoUrl,
+              answer,
+              detectedPlayers: detectedPlayers || [],
+            };
+            room.submissions.push(newSubmission);
+
             // Notify host with player's submission details (with detected player tags)
             if (room.hostSocket) {
               send(room.hostSocket, {
                 type: 'submission-received',
-                playerName: userName,
-                challengeId,
-                photoUrl,
-                answer,
-                detectedPlayers: detectedPlayers || [],
+                ...newSubmission
               });
             }
           }

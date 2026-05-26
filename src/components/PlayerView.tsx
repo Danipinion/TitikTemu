@@ -87,13 +87,20 @@ export const PlayerView: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanCompleted, setScanCompleted] = useState(false);
 
+  // Gallery submissions from climax state
+  const [gallerySubmissions, setGallerySubmissions] = useState<any[]>([]);
+  const [selectedSub, setSelectedSub] = useState<any | null>(null);
+
   // Initialize Websocket hook
   const { isConnected, sendSubmission, playersList } = useWebsocket({
     pin: isJoined ? pin : '',
     name,
     role: 'player',
     identityPhoto: registeredFace || '',
-    onChallengeChanged: (newIndex) => {
+    onChallengeChanged: (newIndex, subs) => {
+      if (subs) {
+        setGallerySubmissions(subs);
+      }
       setActiveChallengeIndex((prevIndex) => {
         // Only wipe progress if the host actually changed the challenge index
         if (prevIndex !== newIndex) {
@@ -347,6 +354,123 @@ export const PlayerView: React.FC = () => {
             {isConnected ? 'Sync Active' : 'Connecting to websocket...'}
           </p>
         </div>
+      </div>
+    );
+  }
+
+  // Rendering screen 3a: Climax Gallery (activeChallengeIndex === 11)
+  if (activeChallengeIndex === 11) {
+    const personalizedSubmissions = gallerySubmissions.filter((sub) => {
+      return (
+        sub.playerName === name ||
+        (sub.detectedPlayers && sub.detectedPlayers.includes(name))
+      );
+    });
+
+    return (
+      <div className="min-h-screen bg-[#08080C] text-zinc-100 flex flex-col p-6 font-sans relative overflow-x-hidden">
+        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[60%] rounded-full bg-violet-900/10 blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[50%] rounded-full bg-rose-900/10 blur-[100px] pointer-events-none" />
+
+        <div className="w-full max-w-sm mx-auto flex-grow flex flex-col space-y-6 z-10 py-6">
+          <div className="text-center space-y-2">
+            <span className="text-[10px] font-mono text-indigo-400 tracking-widest uppercase">GALERI KEBERSAMAAN KAMU</span>
+            <h2 className="text-2xl font-serif text-white italic">Memory Diary {name} ✨</h2>
+            <p className="text-xs text-zinc-400 max-w-xs mx-auto leading-relaxed">
+              Berikut adalah momen keseruan yang melibatkan kamu (difoto olehmu atau dideteksi AI bersamamu).
+            </p>
+          </div>
+
+          {/* Personalized Masonry/Grid of Polaroids */}
+          {personalizedSubmissions.length === 0 ? (
+            <div className="flex-grow flex flex-col justify-center items-center text-center p-8 border border-dashed border-white/10 rounded-3xl bg-zinc-900/5 my-auto">
+              <span className="text-5xl mb-4 animate-pulse">🖼️</span>
+              <h2 className="text-base font-serif italic text-zinc-400">Belum ada momen kamu.</h2>
+              <p className="text-xs text-zinc-500 max-w-xs mt-1 leading-relaxed">
+                Kamu belum mengirim foto atau ditag oleh kawanmu. Tetap pantau layar Host untuk melihat seluruh karya kelompok!
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6 overflow-y-auto max-h-[70vh] p-1 pb-10">
+              {personalizedSubmissions.map((sub, idx) => {
+                const challengeTitle = CHALLENGES[sub.challengeId - 1]?.title || 'Tantangan';
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => setSelectedSub(sub)}
+                    className="bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-xl hover:shadow-[0_10px_30px_rgba(99,102,241,0.25)] transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
+                  >
+                    {/* Visual Polaroid Tape */}
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-5 bg-white/10 backdrop-blur-md border border-white/20 rotate-[-3deg] z-10 opacity-70" />
+
+                    <div className="aspect-[4/5] bg-black rounded-lg overflow-hidden relative">
+                      <img src={sub.photoUrl} alt="Polaroid" className="w-full h-full object-cover" />
+                      
+                      {/* Face recognition tags overlay */}
+                      {sub.detectedPlayers && sub.detectedPlayers.length > 0 && (
+                        <div className="absolute bottom-2 left-2 right-2 px-1.5 py-0.5 bg-indigo-950/80 backdrop-blur-md rounded text-[8px] font-mono text-indigo-300 border border-indigo-500/20 truncate">
+                          👥 {sub.detectedPlayers.join(', ')}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] font-mono text-zinc-500 uppercase">{challengeTitle}</span>
+                        <span className="text-xs font-serif italic text-indigo-300 font-semibold">{sub.playerName}</span>
+                      </div>
+                      <p className="text-xs font-sans text-zinc-300 italic leading-relaxed border-t border-white/5 pt-2">
+                        "{sub.answer}"
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Polaroid detail modal */}
+        {selectedSub && (
+          <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 flex items-center justify-center p-6" onClick={() => setSelectedSub(null)}>
+            <div className="max-w-xs w-full bg-zinc-950 border border-white/10 rounded-3xl p-5 shadow-2xl flex flex-col gap-4 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setSelectedSub(null)} className="absolute top-4 right-4 text-zinc-500 hover:text-white font-mono text-xs">
+                ✕ Tutup
+              </button>
+
+              <div className="aspect-[4/5] bg-black rounded-xl overflow-hidden shadow-inner">
+                <img src={selectedSub.photoUrl} alt="Detail" className="w-full h-full object-cover" />
+              </div>
+
+              <div className="flex flex-col gap-3 py-1">
+                <div>
+                  <span className="text-[9px] font-mono text-indigo-400 tracking-wider">OLEH</span>
+                  <h3 className="text-base font-serif text-white italic mt-0.5">{selectedSub.playerName}</h3>
+                </div>
+
+                {selectedSub.detectedPlayers && selectedSub.detectedPlayers.length > 0 && (
+                  <div>
+                    <span className="text-[9px] font-mono text-emerald-400 tracking-wider">AI DETECTED ({selectedSub.detectedPlayers.length})</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedSub.detectedPlayers.map((pn: string, pidx: number) => (
+                        <span key={pidx} className="px-2 py-0.5 bg-emerald-950/40 border border-emerald-500/20 rounded-md text-[8px] font-mono text-emerald-300">
+                          ✓ {pn}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <span className="text-[9px] font-mono text-rose-400 tracking-wider">JAWABAN</span>
+                  <p className="text-xs font-sans text-zinc-300 leading-relaxed italic mt-1 bg-white/5 border border-white/5 rounded-lg p-3">
+                    "{selectedSub.answer}"
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

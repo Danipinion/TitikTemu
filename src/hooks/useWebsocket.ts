@@ -13,7 +13,7 @@ export interface UseWebsocketOptions {
   name?: string;
   role: SocketRole;
   identityPhoto?: string;
-  onChallengeChanged?: (challengeIndex: number) => void;
+  onChallengeChanged?: (challengeIndex: number, submissions?: any[]) => void;
   onPlayerJoined?: (name: string, playersList: ConnectedPlayer[]) => void;
   onPlayerLeft?: (name: string, playersList: ConnectedPlayer[]) => void;
   onSubmissionReceived?: (submission: {
@@ -100,7 +100,7 @@ export const useWebsocket = ({
             console.log(`Successfully joined room ${payload.pin} as ${payload.name}`);
             setCurrentChallengeIndex(payload.currentChallengeIndex);
             if (callbacksRef.current.onChallengeChanged) {
-              callbacksRef.current.onChallengeChanged(payload.currentChallengeIndex);
+              callbacksRef.current.onChallengeChanged(payload.currentChallengeIndex, payload.submissions);
             }
             break;
 
@@ -121,7 +121,7 @@ export const useWebsocket = ({
           case 'challenge-changed':
             setCurrentChallengeIndex(payload.challengeIndex);
             if (callbacksRef.current.onChallengeChanged) {
-              callbacksRef.current.onChallengeChanged(payload.challengeIndex);
+              callbacksRef.current.onChallengeChanged(payload.challengeIndex, payload.submissions);
             }
             break;
 
