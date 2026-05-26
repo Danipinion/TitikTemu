@@ -1,5 +1,35 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'http';
+import { writeFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'fs';
+import { join, extname } from 'path';
+
+const UPLOADS_DIR = join(process.cwd(), 'uploads');
+if (!existsSync(UPLOADS_DIR)) {
+  mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+// Helper to save Base64 data strings as JPEG images on local disk
+const saveBase64Image = (base64Str: string, prefix: string): string => {
+  if (!base64Str || !base64Str.startsWith('data:image/')) {
+    return base64Str; // Return as-is if already a path or empty
+  }
+  try {
+    const matches = base64Str.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return base64Str;
+    }
+    const ext = matches[1].split('/')[1] || 'jpg';
+    const buffer = Buffer.from(matches[2], 'base64');
+    const filename = `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}.${ext}`;
+    const filepath = join(UPLOADS_DIR, filename);
+    writeFileSync(filepath, buffer);
+    console.log(`Saved image to disk: ${filepath}`);
+    return `/uploads/${filename}`;
+  } catch (err) {
+    console.error('Error saving image to disk:', err);
+    return base64Str;
+  }
+};
 
 // Interfaces for State Tracking
 interface PlayerSession {
@@ -19,7 +49,65 @@ interface RoomSession {
 
 const rooms = new Map<string, RoomSession>();
 
-const server = createServer();
+const server = createServer((req, res) => {
+  const url = req.url || '/';
+
+  // 1. Serve static files from the uploads/ directory
+  if (url.startsWith('/uploads/')) {
+    const filename = url.replace('/uploads/', '');
+    // Clean filename to prevent path traversal
+    const safeFilename = filename.replace(/\.\./g, '');
+    const filePath = join(UPLOADS_DIR, safeFilename);
+
+    if (existsSync(filePath) && statSync(filePath).isFile()) {
+      const ext = extname(filePath).toLowerCase();
+      let contentType = 'application/octet-stream';
+      if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
+      else if (ext === '.png') contentType = 'image/png';
+      else if (ext === '.webp') contentType = 'image/webp';
+
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(readFileSync(filePath));
+      return;
+    }
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found');
+    return;
+  }
+
+  // 2. Serve static files from the dist/ directory in production build
+  const distPath = join(process.cwd(), 'dist');
+  if (existsSync(distPath)) {
+    const cleanUrl = url.split('?')[0];
+    let filePath = join(distPath, cleanUrl);
+
+    // SPA routing fallback: if request is a directory or path does not exist, serve index.html
+    if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
+      filePath = join(distPath, 'index.html');
+    }
+
+    if (existsSync(filePath) && statSync(filePath).isFile()) {
+      const ext = extname(filePath).toLowerCase();
+      let contentType = 'text/html';
+      if (ext === '.js') contentType = 'application/javascript';
+      else if (ext === '.css') contentType = 'text/css';
+      else if (ext === '.png') contentType = 'image/png';
+      else if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
+      else if (ext === '.ico') contentType = 'image/x-icon';
+      else if (ext === '.svg') contentType = 'image/svg+xml';
+      else if (ext === '.json') contentType = 'application/json';
+
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(readFileSync(filePath));
+      return;
+    }
+  }
+
+  // Fallback for development
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end('<h1>TitikTemu Server</h1><p>Running development mode. WebSocket on port 8080.</p>');
+});
+
 const wss = new WebSocketServer({ noServer: true });
 
 server.on('upgrade', (request, socket, head) => {
@@ -101,12 +189,15 @@ wss.on('connection', (ws: WebSocket) => {
           userName = name;
           userRole = 'player';
 
+          // Save identity photo to local disk
+          const savedIdentityPhoto = identityPhoto ? saveBase64Image(identityPhoto, `profile_${name.replace(/\s+/g, '_')}`) : '';
+
           // Add or update player in room state
           room.players.set(name, {
             name,
             socket: ws,
             joinedAt: new Date(),
-            identityPhoto: identityPhoto || '',
+            identityPhoto: savedIdentityPhoto,
           });
 
           console.log(`Player [${name}] joined Room [${pin}].`);
@@ -172,10 +263,12 @@ wss.on('connection', (ws: WebSocket) => {
           if (room) {
             console.log(`Player [${userName}] in Room [${userPin}] submitted challenge ${challengeId}.`);
 
+            const savedPhotoUrl = saveBase64Image(photoUrl, `challenge_${challengeId}_${userName.replace(/\s+/g, '_')}`);
+
             const newSubmission = {
               playerName: userName,
               challengeId,
-              photoUrl,
+              photoUrl: savedPhotoUrl,
               answer,
               detectedPlayers: detectedPlayers || [],
             };
@@ -231,7 +324,7 @@ wss.on('connection', (ws: WebSocket) => {
   });
 });
 
-const PORT = process.env.WS_PORT ? parseInt(process.env.WS_PORT) : 8080;
-server.listen(PORT, () => {
-  console.log(`WebSocket Server listening on ws://localhost:${PORT}`);
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : (process.env.WS_PORT ? parseInt(process.env.WS_PORT) : 8080);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`WebSocket & Static Server listening on port ${PORT}`);
 });

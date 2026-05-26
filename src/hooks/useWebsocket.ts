@@ -25,8 +25,19 @@ export interface UseWebsocketOptions {
   }) => void;
 }
 
+const getWsUrl = (providedUrl?: string) => {
+  if (providedUrl) return providedUrl;
+  if (typeof window === 'undefined') return 'ws://localhost:8080';
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.hostname;
+  // If we are developing locally on port 3000, Vite dev server is on 3000 and Websocket is on 8080.
+  // In production (Docker), they are served on the same port.
+  const port = window.location.port === '3000' || window.location.port === '3002' ? '8080' : window.location.port;
+  return `${protocol}//${host}${port ? `:${port}` : ''}`;
+};
+
 export const useWebsocket = ({
-  url = 'ws://localhost:8080',
+  url,
   pin,
   name,
   role,
@@ -63,14 +74,16 @@ export const useWebsocket = ({
   const connect = useCallback(() => {
     if (!pin) return;
 
+    const resolvedUrl = getWsUrl(url);
+
     // Clean up any existing connection
     if (ws.current) {
       ws.current.onclose = null;
       ws.current.close();
     }
 
-    console.log(`Connecting to WebSocket: ${url}`);
-    const socket = new WebSocket(url);
+    console.log(`Connecting to WebSocket: ${resolvedUrl}`);
+    const socket = new WebSocket(resolvedUrl);
     ws.current = socket;
 
     socket.onopen = () => {

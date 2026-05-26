@@ -82,3 +82,30 @@ Jalankan file SQL `schema.sql` pada database PostgreSQL lokal Anda untuk mengimp
 4. Masukkan **Room PIN** tadi dan nama Anda, kemudian klik **"Masuk Kamar"**.
 5. Pada layar Host, Anda akan melihat nama pemain bertambah di daftar peserta secara langsung.
 6. Klik **"Mulai Sesi Bonding"** pada layar Host untuk memandu tantangan ke semua peserta serentak!
+
+---
+
+## 🐳 Deployment Docker (Proxmox / Cloud VM)
+
+Aplikasi **TitikTemu** dikonfigurasikan agar dapat dibundel dalam satu container Docker yang sangat ringkas dan ringan. Kontainer ini akan mem-build frontend SPA secara otomatis, mengompilasi backend server ke JavaScript murni, dan melayani keduanya secara bersamaan di port **8080** (termasuk penyimpanan file foto lokal yang persisten).
+
+### 1. Penyimpanan Foto & File Persisten
+Semua foto profil peserta dan foto submisi tantangan disimpan sebagai file `.jpg` langsung di folder `./uploads/` pada harddisk server (menggantikan penyimpanan Base64 di memori RAM).
+
+Saat dideploy di Docker/Proxmox, folder ini terhubung sebagai **Named Volume** (`titiktemu-uploads`), sehingga data foto Anda tidak akan hilang meskipun kontainer di-restart atau di-update.
+
+### 2. Cara Build & Run dengan Docker Compose
+Pastikan Docker dan Docker Compose telah terpasang di Proxmox LXC Container / VM Anda. Jalankan perintah berikut di folder proyek:
+
+```bash
+# Build image dan jalankan container di background
+docker compose up -d --build
+```
+
+Setelah berjalan, Anda dapat mengakses TitikTemu secara penuh melalui satu port saja:
+- **Web App UI (Host & Player)**: `http://<IP_PROXMOX>:8080`
+- **WebSocket Connection**: Otomatis tersambung di `ws://<IP_PROXMOX>:8080`
+- **Momen Foto Terunggah**: Dapat diakses langsung di `http://<IP_PROXMOX>:8080/uploads/...`
+
+### 3. Konfigurasi Reverse Proxy (Nginx / Cloudflare Tunnel)
+Jika ingin menggunakan domain HTTPS, Anda cukup mengarahkan reverse proxy ke port `8080` di Proxmox Anda. Jangan lupa mengaktifkan dukungan WebSocket (`Upgrade` & `Connection` headers).

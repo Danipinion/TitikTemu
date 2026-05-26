@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  titiktemu:
+    build: .
+    container_name: titiktemu
+    ports:
+      - "8080:8080"
+    volumes:
+      - titiktemu-uploads:/app/uploads
+    environment:
+      - PORT=8080
+    restart: unless-stopped
+
+volumes:
+  titiktemu-uploads:
+    name: titiktemu-uploads
