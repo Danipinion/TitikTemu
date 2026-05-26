@@ -65,6 +65,7 @@ export const useWebsocket = ({
 
     // Clean up any existing connection
     if (ws.current) {
+      ws.current.onclose = null;
       ws.current.close();
     }
 
@@ -203,6 +204,7 @@ export const useWebsocket = ({
 
     return () => {
       if (ws.current) {
+        ws.current.onclose = null;
         ws.current.close();
       }
       if (reconnectTimeout.current) {

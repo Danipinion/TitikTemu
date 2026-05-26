@@ -430,16 +430,16 @@ export const PlayerView: React.FC = () => {
             {/* Simulated green face bounding boxes overlay */}
             {scanCompleted && (
               <div className="absolute inset-0 pointer-events-none z-10">
-                {/* Box 1: The Player themselves */}
-                <div className="absolute top-[28%] left-[15%] w-[32%] h-[32%] border-2 border-emerald-400 rounded-2xl shadow-[0_0_15px_rgba(52,211,153,0.5)]">
-                  <span className="absolute -top-6 left-0 bg-emerald-500 text-white font-mono text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">
+                {/* Box 1: The Player themselves (Centered) */}
+                <div className="absolute top-[20%] left-[34%] w-[32%] h-[38%] border-2 border-emerald-400 rounded-2xl shadow-[0_0_15px_rgba(52,211,153,0.5)] animate-[pulse_2s_infinite]">
+                  <span className="absolute -top-6 left-0 bg-emerald-500 text-white font-mono text-[8px] font-bold px-1.5 py-0.5 rounded uppercase whitespace-nowrap">
                     {name} (99% Match)
                   </span>
                 </div>
 
-                {/* Box 2: The selected partner */}
+                {/* Box 2: The selected partner (Side) */}
                 {selectedPartners.length > 0 && (
-                  <div className="absolute top-[34%] right-[15%] w-[32%] h-[32%] border-2 border-indigo-400 rounded-2xl shadow-[0_0_15px_rgba(129,140,248,0.5)] animate-[pulse_2s_infinite]">
+                  <div className="absolute top-[28%] left-[6%] w-[28%] h-[34%] border-2 border-indigo-400 rounded-2xl shadow-[0_0_15px_rgba(129,140,248,0.5)]">
                     <span className="absolute -top-6 left-0 bg-indigo-500 text-white font-mono text-[8px] font-bold px-1.5 py-0.5 rounded uppercase max-w-[100px] truncate">
                       {selectedPartners[0]} (92% Match)
                     </span>
