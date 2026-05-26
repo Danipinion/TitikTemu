@@ -361,10 +361,10 @@ export const PlayerView: React.FC = () => {
   // Rendering screen 3a: Climax Gallery (activeChallengeIndex === 11)
   if (activeChallengeIndex === 11) {
     const personalizedSubmissions = gallerySubmissions.filter((sub) => {
-      return (
-        sub.playerName === name ||
-        (sub.detectedPlayers && sub.detectedPlayers.includes(name))
-      );
+      const targetName = name.trim().toLowerCase();
+      const isOwner = sub.playerName.trim().toLowerCase() === targetName;
+      const isTagged = sub.detectedPlayers && sub.detectedPlayers.some((p: string) => p.trim().toLowerCase() === targetName);
+      return isOwner || isTagged;
     });
 
     return (
