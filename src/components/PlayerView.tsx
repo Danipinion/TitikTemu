@@ -89,7 +89,7 @@ export const PlayerView: React.FC = () => {
 
   // Initialize Websocket hook
   const { isConnected, sendSubmission, playersList } = useWebsocket({
-    pin,
+    pin: isJoined ? pin : '',
     name,
     role: 'player',
     identityPhoto: registeredFace || '',
@@ -171,7 +171,9 @@ export const PlayerView: React.FC = () => {
           {!registeredFace ? (
             <div className="space-y-4">
               <CameraCapture 
-                onCapture={handleCapture} 
+                onCapture={(_file, previewUrl) => {
+                  setRegisteredFace(previewUrl);
+                }} 
               />
             </div>
           ) : (
