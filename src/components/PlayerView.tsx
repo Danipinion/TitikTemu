@@ -100,6 +100,8 @@ export const PlayerView: React.FC = () => {
     onChallengeChanged: (newIndex, subs) => {
       if (subs) {
         setGallerySubmissions(subs);
+      } else if (newIndex === 0) {
+        setGallerySubmissions([]);
       }
       setActiveChallengeIndex((prevIndex) => {
         // Only wipe progress if the host actually changed the challenge index

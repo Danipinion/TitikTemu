@@ -146,6 +146,12 @@ wss.on('connection', (ws: WebSocket) => {
             room.currentChallengeIndex = challengeIndex;
             console.log(`Room [${userPin}] advanced to stage ${challengeIndex}.`);
 
+            // If resetting back to lobby (stage 0), clear all game submissions
+            if (challengeIndex === 0) {
+              room.submissions = [];
+              console.log(`Room [${userPin}] submissions cleared for new session.`);
+            }
+
             // Broadcast the new stage to all players in the room
             broadcastToRoom(userPin, {
               type: 'challenge-changed',
