@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CameraCapture } from './CameraCapture';
 import { useWebsocket } from '../hooks/useWebsocket';
-import { downloadSinglePolaroid, downloadPhotoboothStrip } from '../utils/photobooth';
+import { downloadSinglePolaroid, downloadPhotoStrip } from '../utils/photobooth';
 
 const CHALLENGES = [
   {
@@ -386,10 +386,10 @@ export const PlayerView: React.FC = () => {
 
           {personalizedSubmissions.length > 0 && (
             <button
-              onClick={() => downloadPhotoboothStrip(name, personalizedSubmissions, CHALLENGES)}
+              onClick={() => downloadPhotoStrip(name, personalizedSubmissions, CHALLENGES)}
               className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all flex items-center justify-center gap-2 transform active:scale-95"
             >
-              <span className="text-sm">🎞️</span> Unduh Photobooth Strip Saya
+              <span className="text-sm">🎞️</span> Unduh Strip Foto Saya
             </button>
           )}
 

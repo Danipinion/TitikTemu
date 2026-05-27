@@ -1,4 +1,4 @@
-// Photobooth and Collage Canvas Generator Utilities
+// Strip Foto and Collage Canvas Generator Utilities
 // Renders high-quality themed images client-side for downloads
 
 export interface PhotoSubmission {
@@ -244,9 +244,9 @@ export const downloadSinglePolaroid = async (
 };
 
 /**
- * Downloads a vertical photobooth strip for a single player (collages their photos)
+ * Downloads a vertical photo strip for a single player (collages their photos)
  */
-export const downloadPhotoboothStrip = async (
+export const downloadPhotoStrip = async (
   playerName: string,
   playerSubmissions: PhotoSubmission[],
   challengesList?: ChallengeInfo[]
@@ -255,7 +255,7 @@ export const downloadPhotoboothStrip = async (
   const photoCount = Math.min(subs.length, 4); // max 4 photos in a strip
 
   if (photoCount === 0) {
-    alert('Belum ada foto dari kamu untuk dijadikan photobooth strip.');
+    alert('Belum ada foto dari kamu untuk dijadikan strip foto.');
     return;
   }
 
@@ -379,14 +379,14 @@ export const downloadPhotoboothStrip = async (
 
   ctx.fillStyle = '#A1A1AA';
   ctx.font = '11px sans-serif';
-  ctx.fillText(`Photobooth Strip untuk: ${playerName}`, width / 2, fy + 78);
+  ctx.fillText(`Strip Foto untuk: ${playerName}`, width / 2, fy + 78);
 
   ctx.fillStyle = '#52525B';
   ctx.font = '9px monospace';
   ctx.fillText('HIMA TRPL BONDING EVENT • 2026', width / 2, fy + 98);
 
   // Download
-  const filename = `photobooth_strip_${playerName.replace(/\s+/g, '_')}.png`;
+  const filename = `strip_foto_${playerName.replace(/\s+/g, '_')}.png`;
   triggerDownload(canvas.toDataURL('image/png'), filename);
 };
 

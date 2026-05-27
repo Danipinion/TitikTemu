@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWebsocket } from '../hooks/useWebsocket';
 import type { ConnectedPlayer } from '../hooks/useWebsocket';
-import { downloadSinglePolaroid, downloadPhotoboothStrip, downloadGroupCollage } from '../utils/photobooth';
+import { downloadSinglePolaroid, downloadPhotoStrip, downloadGroupCollage } from '../utils/photobooth';
 
 interface Submission {
   playerName: string;
@@ -435,7 +435,7 @@ export const HostView: React.FC = () => {
                   const val = e.target.value;
                   if (val) {
                     const playerSubs = submissions.filter(s => s.playerName === val);
-                    downloadPhotoboothStrip(val, playerSubs, CHALLENGES);
+                    downloadPhotoStrip(val, playerSubs, CHALLENGES);
                     e.target.value = '';
                   }
                 }}
