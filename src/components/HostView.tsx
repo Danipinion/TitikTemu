@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWebsocket } from '../hooks/useWebsocket';
 import type { ConnectedPlayer } from '../hooks/useWebsocket';
+import { downloadSinglePolaroid, downloadPhotoboothStrip, downloadGroupCollage } from '../utils/photobooth';
 
 interface Submission {
   playerName: string;
@@ -413,23 +414,53 @@ export const HostView: React.FC = () => {
       <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[50%] rounded-full bg-rose-900/10 blur-[150px] pointer-events-none" />
 
       {/* Header bar */}
-      <div className="flex justify-between items-center pb-6 border-b border-white/5 mb-8">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center pb-6 border-b border-white/5 mb-8 gap-4">
         <div>
           <span className="text-[10px] font-mono text-indigo-400 tracking-widest uppercase">GALERI KEBERSAMAAN</span>
           <h1 className="text-3xl font-serif italic text-white mt-1">Melebur Tanpa Jarak ✨</h1>
           <p className="text-xs text-zinc-400 mt-1">Berikut adalah semua potret konyol dan curahan hati paling jujur dari teman-teman HIMA TRPL.</p>
         </div>
-        <button
-          onClick={() => {
-            // Reset to Lobby
-            setActiveStage(0);
-            setSubmissions([]);
-            sendNextChallenge(0);
-          }}
-          className="px-6 py-2.5 bg-zinc-900 border border-white/10 rounded-xl hover:bg-zinc-800 text-xs font-mono text-zinc-300 transition-all"
-        >
-          Reset Room 🔄
-        </button>
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto lg:justify-end">
+          {submissions.length > 0 && (
+            <>
+              <button
+                onClick={() => downloadGroupCollage(submissions, CHALLENGES)}
+                className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all flex items-center gap-1.5 transform active:scale-95"
+              >
+                <span>🖼️</span> Unduh Kolase Himpunan
+              </button>
+
+              <select
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val) {
+                    const playerSubs = submissions.filter(s => s.playerName === val);
+                    downloadPhotoboothStrip(val, playerSubs, CHALLENGES);
+                    e.target.value = '';
+                  }
+                }}
+                className="px-4 py-2.5 bg-zinc-900 border border-white/10 rounded-xl text-xs font-mono text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                defaultValue=""
+              >
+                <option value="" disabled>🎞️ Unduh Strip Peserta...</option>
+                {Array.from(new Set(submissions.map(s => s.playerName))).map((name, pIdx) => (
+                  <option key={pIdx} value={name}>{name}</option>
+                ))}
+              </select>
+            </>
+          )}
+          <button
+            onClick={() => {
+              // Reset to Lobby
+              setActiveStage(0);
+              setSubmissions([]);
+              sendNextChallenge(0);
+            }}
+            className="px-6 py-2.5 bg-zinc-900 border border-white/10 rounded-xl hover:bg-zinc-800 text-xs font-mono text-zinc-300 transition-all"
+          >
+            Reset Room 🔄
+          </button>
+        </div>
       </div>
 
       {/* Beautiful Polaroid Masonry Board */}
@@ -468,9 +499,23 @@ export const HostView: React.FC = () => {
                     <span className="text-[9px] font-mono text-zinc-500 uppercase">{challengeTitle}</span>
                     <span className="text-xs font-serif italic text-indigo-300 font-semibold">{sub.playerName}</span>
                   </div>
-                  <p className="text-xs font-sans text-zinc-300 italic leading-relaxed border-t border-white/5 pt-2">
-                    "{sub.answer}"
-                  </p>
+                  <div className="flex justify-between items-start gap-2 border-t border-white/5 pt-2">
+                    <p className="text-xs font-sans text-zinc-300 italic leading-relaxed flex-grow">
+                      "{sub.answer}"
+                    </p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downloadSinglePolaroid(sub, challengeTitle);
+                      }}
+                      className="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg transition-colors flex-shrink-0"
+                      title="Download Polaroid"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -517,6 +562,19 @@ export const HostView: React.FC = () => {
                     "{selectedSub.answer}"
                   </p>
                 </div>
+
+                <button
+                  onClick={() => {
+                    const chal = CHALLENGES[selectedSub.challengeId - 1];
+                    downloadSinglePolaroid(selectedSub, chal ? chal.title : undefined);
+                  }}
+                  className="w-full mt-2 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                  Unduh Polaroid
+                </button>
               </div>
 
               <div className="text-[9px] font-mono text-zinc-600">

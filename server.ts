@@ -66,7 +66,10 @@ const server = createServer((req, res) => {
       else if (ext === '.png') contentType = 'image/png';
       else if (ext === '.webp') contentType = 'image/webp';
 
-      res.writeHead(200, { 'Content-Type': contentType });
+      res.writeHead(200, { 
+        'Content-Type': contentType,
+        'Access-Control-Allow-Origin': '*'
+      });
       res.end(readFileSync(filePath));
       return;
     }

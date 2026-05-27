@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CameraCapture } from './CameraCapture';
 import { useWebsocket } from '../hooks/useWebsocket';
+import { downloadSinglePolaroid, downloadPhotoboothStrip } from '../utils/photobooth';
 
 const CHALLENGES = [
   {
@@ -383,6 +384,15 @@ export const PlayerView: React.FC = () => {
             </p>
           </div>
 
+          {personalizedSubmissions.length > 0 && (
+            <button
+              onClick={() => downloadPhotoboothStrip(name, personalizedSubmissions, CHALLENGES)}
+              className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all flex items-center justify-center gap-2 transform active:scale-95"
+            >
+              <span className="text-sm">🎞️</span> Unduh Photobooth Strip Saya
+            </button>
+          )}
+
           {/* Personalized Masonry/Grid of Polaroids */}
           {personalizedSubmissions.length === 0 ? (
             <div className="flex-grow flex flex-col justify-center items-center text-center p-8 border border-dashed border-white/10 rounded-3xl bg-zinc-900/5 my-auto">
@@ -421,9 +431,23 @@ export const PlayerView: React.FC = () => {
                         <span className="text-[9px] font-mono text-zinc-500 uppercase">{challengeTitle}</span>
                         <span className="text-xs font-serif italic text-indigo-300 font-semibold">{sub.playerName}</span>
                       </div>
-                      <p className="text-xs font-sans text-zinc-300 italic leading-relaxed border-t border-white/5 pt-2">
-                        "{sub.answer}"
-                      </p>
+                      <div className="flex justify-between items-start gap-2 border-t border-white/5 pt-2">
+                        <p className="text-xs font-sans text-zinc-300 italic leading-relaxed flex-grow">
+                          "{sub.answer}"
+                        </p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadSinglePolaroid(sub, challengeTitle);
+                          }}
+                          className="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg transition-colors flex-shrink-0"
+                          title="Download Polaroid"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -469,6 +493,19 @@ export const PlayerView: React.FC = () => {
                     "{selectedSub.answer}"
                   </p>
                 </div>
+
+                <button
+                  onClick={() => {
+                    const chal = CHALLENGES[selectedSub.challengeId - 1];
+                    downloadSinglePolaroid(selectedSub, chal ? chal.title : undefined);
+                  }}
+                  className="w-full mt-2 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                  Unduh Polaroid
+                </button>
               </div>
             </div>
           </div>
