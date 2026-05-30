@@ -145,8 +145,8 @@ const drawStamp = (
   radius: number,
 ) => {
   ctx.save();
-  ctx.strokeStyle = "rgba(244, 63, 94, 0.7)"; // retro rose red
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgba(244, 63, 94, 0.75)"; // retro rose red
+  ctx.lineWidth = Math.max(1.5, radius * 0.06);
 
   // Outer circular border
   ctx.beginPath();
@@ -155,22 +155,25 @@ const drawStamp = (
 
   // Inner circular border
   ctx.beginPath();
-  ctx.arc(cx, cy, radius - 5, 0, Math.PI * 2);
+  ctx.arc(cx, cy, radius * 0.84, 0, Math.PI * 2);
   ctx.stroke();
 
   // Inner decorative text and lines
-  ctx.fillStyle = "rgba(244, 63, 94, 0.7)";
-  ctx.font = "bold 8px monospace";
+  ctx.fillStyle = "rgba(244, 63, 94, 0.75)";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(-0.15); // Authentic retro stamp tilt
-  ctx.font = "bold 9px monospace";
-  ctx.fillText("APPROVED", 0, -4);
-  ctx.font = "7px sans-serif";
-  ctx.fillText("HIMA TRPL", 0, 7);
+  
+  const fontSize1 = Math.max(7, Math.round(radius * 0.28));
+  const fontSize2 = Math.max(5, Math.round(radius * 0.22));
+
+  ctx.font = `bold ${fontSize1}px monospace`;
+  ctx.fillText("APPROVED", 0, -radius * 0.12);
+  ctx.font = `bold ${fontSize2}px sans-serif`;
+  ctx.fillText("HIMA TRPL", 0, radius * 0.22);
   ctx.restore();
 
   ctx.restore();
@@ -476,8 +479,8 @@ export const downloadSinglePolaroid = async (
     }
   }
 
-  // Draw HIMA TRPL approved stamp seal
-  drawStamp(ctx, 475, 630, 32);
+  // Draw HIMA TRPL approved stamp seal (enlarged for better legibility)
+  drawStamp(ctx, 455, 620, 48);
 
   // Decorative divider line (dashed)
   ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
@@ -542,147 +545,233 @@ export const downloadPhotoStrip = async (
   const subs = [...playerSubmissions].sort(
     (a, b) => a.challengeId - b.challengeId,
   );
-  const photoCount = Math.min(subs.length, 4); // max 4 photos in a strip
 
-  if (photoCount === 0) {
+  if (subs.length === 0) {
     alert("Belum ada foto dari kamu untuk dijadikan strip foto.");
     return;
   }
 
-  const canvas = document.createElement("canvas");
-  const width = 420;
+  const chunkSize = 3;
+  const totalStrips = Math.ceil(subs.length / chunkSize);
 
-  // Dynamic height based on photo count:
-  // Header: 80px
-  // Each photo section: 300px (270px photo + 30px gap/caption)
-  // Footer: 120px
-  const headerHeight = 80;
-  const photoSectionHeight = 290;
-  const footerHeight = 130;
-  const height = headerHeight + photoCount * photoSectionHeight + footerHeight;
+  for (let sIdx = 0; sIdx < totalStrips; sIdx++) {
+    const chunkSubs = subs.slice(sIdx * chunkSize, (sIdx + 1) * chunkSize);
+    const photoCount = chunkSubs.length;
 
-  canvas.width = width;
-  canvas.height = height;
+    const canvas = document.createElement("canvas");
+    const width = 420;
 
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+    // Dynamic height based on photo count:
+    // Header: 80px
+    // Each photo section: 290px (250px photo + 40px gap/caption)
+    // Footer: 130px
+    const headerHeight = 80;
+    const photoSectionHeight = 290;
+    const footerHeight = 130;
+    const height = headerHeight + photoCount * photoSectionHeight + footerHeight;
 
-  // 1. Draw Background
-  ctx.fillStyle = "#08080C"; // Very dark/black
-  ctx.fillRect(0, 0, width, height);
+    canvas.width = width;
+    canvas.height = height;
 
-  // Styled frame border
-  ctx.strokeStyle = "#1E1E2F";
-  ctx.lineWidth = 12;
-  ctx.strokeRect(6, 6, width - 12, height - 12);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) continue;
 
-  // Gradient thin inner border
-  ctx.strokeStyle = "rgba(139, 92, 246, 0.3)"; // violet-500/30
-  ctx.lineWidth = 1;
-  ctx.strokeRect(14, 14, width - 28, height - 28);
+    // 1. Draw Background
+    ctx.fillStyle = "#08080C"; // Very dark/black
+    ctx.fillRect(0, 0, width, height);
 
-  // 2. Draw Header
-  ctx.fillStyle = "#818CF8";
-  ctx.font = "italic bold 22px Georgia, serif";
-  ctx.textAlign = "center";
-  ctx.fillText("titik.temu", width / 2, 45);
+    // Styled frame border
+    ctx.strokeStyle = "#1E1E2F";
+    ctx.lineWidth = 12;
+    ctx.strokeRect(6, 6, width - 12, height - 12);
 
-  ctx.fillStyle = "#475569";
-  ctx.font = "9px monospace";
-  ctx.fillText("M E M O R Y   D I A R Y", width / 2, 60);
+    // Gradient thin inner border
+    ctx.strokeStyle = "rgba(139, 92, 246, 0.3)"; // violet-500/30
+    ctx.lineWidth = 1;
+    ctx.strokeRect(14, 14, width - 28, height - 28);
 
-  // 3. Draw Photos
-  const photoWidth = 360;
-  const photoHeight = 250;
-  const px = (width - photoWidth) / 2; // 30px padding
-
-  const challenges = challengesList || DEFAULT_CHALLENGES;
-
-  for (let i = 0; i < photoCount; i++) {
-    const sub = subs[i];
-    const py = headerHeight + i * photoSectionHeight;
-
-    // Photo Box Background
-    ctx.fillStyle = "#12121A";
-    ctx.fillRect(px, py, photoWidth, photoHeight);
-
-    // Draw Image
-    const img = await loadImage(sub.photoUrl);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(px, py, photoWidth, photoHeight);
-    ctx.clip();
-
-    // Cover crop
-    const imgRatio = img.width / img.height;
-    const destRatio = photoWidth / photoHeight;
-    let sx = 0,
-      sy = 0,
-      sw = img.width,
-      sh = img.height;
-    if (imgRatio > destRatio) {
-      sw = img.height * destRatio;
-      sx = (img.width - sw) / 2;
-    } else {
-      sh = img.width / destRatio;
-      sy = (img.height - sh) / 2;
+    // Draw background confetti & sparkle elements on strip
+    const confettiColors = ["#8B5CF6", "#EC4899", "#3B82F6", "#10B981", "#F59E0B", "#EF4444"];
+    for (let ci = 0; ci < 35; ci++) {
+      const cx = 20 + Math.random() * (width - 40);
+      const cy = Math.random() * height;
+      
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(Math.random() * Math.PI);
+      ctx.fillStyle = confettiColors[ci % confettiColors.length];
+      ctx.globalAlpha = 0.12 + Math.random() * 0.28;
+      
+      const shape = Math.floor(Math.random() * 3);
+      if (shape === 0) {
+        ctx.fillRect(-2.5, -2.5, 5, 5);
+      } else if (shape === 1) {
+        ctx.beginPath();
+        ctx.arc(0, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = confettiColors[ci % confettiColors.length];
+        ctx.beginPath();
+        ctx.moveTo(-3, 0); ctx.lineTo(3, 0);
+        ctx.moveTo(0, -3); ctx.lineTo(0, 3);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
-    ctx.drawImage(img, sx, sy, sw, sh, px, py, photoWidth, photoHeight);
-    ctx.restore();
 
-    // Draw photo outline
-    ctx.strokeStyle = "rgba(255,255,255,0.08)";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(px, py, photoWidth, photoHeight);
-
-    // Draw mini index sticker in the corner
-    ctx.fillStyle = "rgba(99, 102, 241, 0.85)";
-    ctx.fillRect(px + 10, py + 10, 24, 24);
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "bold 12px sans-serif";
+    // 2. Draw Header
+    ctx.fillStyle = "#818CF8";
+    ctx.font = "italic bold 22px Georgia, serif";
     ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(`${i + 1}`, px + 22, py + 22);
-    ctx.textBaseline = "alphabetic"; // reset
+    ctx.fillText("titik.temu", width / 2, 45);
 
-    // Draw challenge mini caption under this photo
-    const chal = challenges.find((c) => c.id === sub.challengeId);
-    const caption = chal ? chal.title : `Tantangan ${sub.challengeId}`;
+    ctx.fillStyle = "#475569";
+    ctx.font = "9px monospace";
+    const titleSuffix = sIdx > 0 ? `   ${sIdx + 1}` : "";
+    ctx.fillText(`M E M O R Y   D I A R Y${titleSuffix}`, width / 2, 60);
 
-    ctx.fillStyle = "#64748B"; // gray-500
-    ctx.font = "bold 10px monospace";
-    ctx.textAlign = "left";
-    ctx.fillText(caption.toUpperCase(), px + 4, py + photoHeight + 18);
+    // 3. Draw Photos
+    const photoWidth = 360;
+    const photoHeight = 250;
+    const px = (width - photoWidth) / 2; // 30px padding
+
+    const challenges = challengesList || DEFAULT_CHALLENGES;
+
+    for (let i = 0; i < photoCount; i++) {
+      const sub = chunkSubs[i];
+      const py = headerHeight + i * photoSectionHeight;
+
+      // Photo Box Background
+      ctx.fillStyle = "#12121A";
+      ctx.fillRect(px, py, photoWidth, photoHeight);
+
+      // Draw Image
+      const img = await loadImage(sub.photoUrl);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(px, py, photoWidth, photoHeight);
+      ctx.clip();
+
+      // Cover crop
+      const imgRatio = img.width / img.height;
+      const destRatio = photoWidth / photoHeight;
+      let sx = 0,
+        sy = 0,
+        sw = img.width,
+        sh = img.height;
+      if (imgRatio > destRatio) {
+        sw = img.height * destRatio;
+        sx = (img.width - sw) / 2;
+      } else {
+        sh = img.width / destRatio;
+        sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, px, py, photoWidth, photoHeight);
+      ctx.restore();
+
+      // Draw photo outline
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px, py, photoWidth, photoHeight);
+
+      // Draw absolute index sticker in the corner
+      const absoluteIndex = sIdx * chunkSize + i + 1;
+      ctx.fillStyle = "rgba(99, 102, 241, 0.85)";
+      ctx.fillRect(px + 10, py + 10, 24, 24);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${absoluteIndex}`, px + 22, py + 22);
+      ctx.textBaseline = "alphabetic"; // reset
+
+      // Draw challenge mini caption under this photo
+      const chal = challenges.find((c) => c.id === sub.challengeId);
+      const caption = chal ? chal.title : `Tantangan ${sub.challengeId}`;
+
+      ctx.fillStyle = "#64748B"; // gray-500
+      ctx.font = "bold 10px monospace";
+      ctx.textAlign = "left";
+      ctx.fillText(caption.toUpperCase(), px + 4, py + photoHeight + 18);
+    }
+
+    // Draw floating emoji stickers on strip (premium theme match)
+    const stripStickers = [
+      { emoji: "✨", x: 60, y: 40, size: 24, angle: -0.15 },
+      { emoji: "📸", x: width - 60, y: 45, size: 22, angle: 0.2 },
+      { emoji: "💖", x: 45, y: height - 60, size: 20, angle: -0.3 },
+      { emoji: "🥳", x: width - 50, y: height - 55, size: 22, angle: 0.15 },
+      { emoji: "🌟", x: 38, y: height / 2 - 80, size: 22, angle: 0.25 },
+      { emoji: "🔥", x: width - 38, y: height / 2 + 60, size: 20, angle: -0.2 }
+    ];
+
+    stripStickers.forEach(stk => {
+      if (stk.y < height) {
+        ctx.save();
+        ctx.translate(stk.x, stk.y);
+        ctx.rotate(stk.angle);
+        
+        ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetY = 2;
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(0, 0, stk.size * 0.72, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+
+        ctx.strokeStyle = "rgba(139, 92, 246, 0.25)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, stk.size * 0.65, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.font = `${stk.size}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(stk.emoji, 0, 1);
+        
+        ctx.restore();
+      }
+    });
+
+    // 4. Draw Footer
+    const fy = height - footerHeight;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(30, fy + 15);
+    ctx.lineTo(width - 30, fy + 15);
+    ctx.stroke();
+
+    // Strip branding info
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "italic italic bold 24px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillText("titik.temu", width / 2, fy + 55);
+
+    ctx.fillStyle = "#A1A1AA";
+    ctx.font = "11px sans-serif";
+    ctx.fillText(`Strip Foto untuk: ${playerName}`, width / 2, fy + 78);
+
+    ctx.fillStyle = "#52525B";
+    ctx.font = "9px monospace";
+    ctx.fillText("HIMA TRPL BONDING EVENT • 2026", width / 2, fy + 98);
+
+    // Download
+    const filenameSuffix = sIdx > 0 ? `_${sIdx + 1}` : "";
+    const filename = `strip_foto_${playerName.replace(/\s+/g, "_")}${filenameSuffix}.png`;
+    triggerDownload(canvas.toDataURL("image/png"), filename);
   }
-
-  // 4. Draw Footer
-  const fy = height - footerHeight;
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(30, fy + 15);
-  ctx.lineTo(width - 30, fy + 15);
-  ctx.stroke();
-
-  // Strip branding info
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = "italic italic bold 24px Georgia, serif";
-  ctx.textAlign = "center";
-  ctx.fillText("titik.temu", width / 2, fy + 55);
-
-  ctx.fillStyle = "#A1A1AA";
-  ctx.font = "11px sans-serif";
-  ctx.fillText(`Strip Foto untuk: ${playerName}`, width / 2, fy + 78);
-
-  ctx.fillStyle = "#52525B";
-  ctx.font = "9px monospace";
-  ctx.fillText("HIMA TRPL BONDING EVENT • 2026", width / 2, fy + 98);
-
-  // Download
-  const filename = `strip_foto_${playerName.replace(/\s+/g, "_")}.png`;
-  triggerDownload(canvas.toDataURL("image/png"), filename);
 };
 
+/**
+ * Downloads a complete collage of all submissions in a beautiful grid (Host side)
+ */
 /**
  * Downloads a complete collage of all submissions in a beautiful grid (Host side)
  */
@@ -690,320 +779,345 @@ export const downloadGroupCollage = async (
   allSubmissions: PhotoSubmission[],
   _challengesList?: ChallengeInfo[],
 ) => {
-  const count = allSubmissions.length;
-  if (count === 0) {
+  if (allSubmissions.length === 0) {
     alert("Belum ada foto terkumpul untuk dijadikan kolase kelompok.");
     return;
   }
 
-  // Calculate dynamic grid dimensions
-  // Standard layout options based on quantity
-  const cols = count <= 2 ? count : count <= 6 ? 3 : count <= 12 ? 4 : 5;
-  const rows = Math.ceil(count / cols);
+  const chunkSize = 8;
+  const totalCollages = Math.ceil(allSubmissions.length / chunkSize);
 
-  const canvasWidth = 1400;
-  const gap = 28;
+  for (let cIdx = 0; cIdx < totalCollages; cIdx++) {
+    const chunkSubmissions = allSubmissions.slice(cIdx * chunkSize, (cIdx + 1) * chunkSize);
+    const count = chunkSubmissions.length;
 
-  // Header height: 170px
-  // Footer height: 130px
-  const headerHeight = 170;
-  const footerHeight = 130;
+    // Calculate dynamic grid dimensions (Max columns = 4 since max count is 8)
+    const cols = count <= 2 ? count : count <= 6 ? 3 : 4;
+    const rows = Math.ceil(count / cols);
 
-  // Compute cell width and cell height (4:3 aspect ratio for clean landscape photos)
-  // X boundaries: from 80 to canvasWidth - 80 (width = 1240)
-  const gridWidthLimit = canvasWidth - 160;
-  const cellWidth = (gridWidthLimit - (cols - 1) * gap) / cols;
-  const cellHeight = cellWidth * 0.75;
+    const canvasWidth = 1400;
+    const gap = 28;
 
-  const gridHeight = rows * cellHeight + (rows - 1) * gap;
-  const canvasHeight = headerHeight + gridHeight + footerHeight;
+    // Header height: 170px
+    // Footer height: 130px
+    const headerHeight = 170;
+    const footerHeight = 130;
 
-  const canvas = document.createElement("canvas");
-  canvas.width = canvasWidth;
-  canvas.height = canvasHeight;
+    // Compute cell width and cell height (4:3 aspect ratio for clean landscape photos)
+    // X boundaries: from 80 to canvasWidth - 80 (width = 1240)
+    const gridWidthLimit = canvasWidth - 160;
+    const cellWidth = (gridWidthLimit - (cols - 1) * gap) / cols;
+    const cellHeight = cellWidth * 0.75;
 
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+    const gridHeight = rows * cellHeight + (rows - 1) * gap;
+    const canvasHeight = headerHeight + gridHeight + footerHeight;
 
-  // 1. Draw Background
-  // Neon radial glow simulation
-  const grad = ctx.createRadialGradient(
-    canvasWidth / 2,
-    canvasHeight / 2,
-    200,
-    canvasWidth / 2,
-    canvasHeight / 2,
-    canvasHeight,
-  );
-  grad.addColorStop(0, "#0F0E17"); // slightly lighter center
-  grad.addColorStop(1, "#050508"); // dark edges
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
 
-  // Simple clean separator lines for film negative boundary
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(50, 0);
-  ctx.lineTo(50, canvasHeight);
-  ctx.moveTo(canvasWidth - 50, 0);
-  ctx.lineTo(canvasWidth - 50, canvasHeight);
-  ctx.stroke();
+    const ctx = canvas.getContext("2d");
+    if (!ctx) continue;
 
-  // Draw background confetti & sparkle elements
-  const confettiColors = ["#8B5CF6", "#EC4899", "#3B82F6", "#10B981", "#F59E0B", "#EF4444"];
-  for (let ci = 0; ci < 100; ci++) {
-    const cx = 60 + Math.random() * (canvasWidth - 120);
-    const cy = Math.random() * canvasHeight;
-    
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(Math.random() * Math.PI);
-    ctx.fillStyle = confettiColors[ci % confettiColors.length];
-    ctx.globalAlpha = 0.15 + Math.random() * 0.35; // subtle background layer
-    
-    const shape = Math.floor(Math.random() * 3);
-    if (shape === 0) {
-      // Small rectangle
-      ctx.fillRect(-3, -3, 6, 6);
-    } else if (shape === 1) {
-      // Tiny circle
-      ctx.beginPath();
-      ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      // Sparkle star (cross)
-      ctx.lineWidth = 1.2;
-      ctx.strokeStyle = confettiColors[ci % confettiColors.length];
-      ctx.beginPath();
-      ctx.moveTo(-4, 0); ctx.lineTo(4, 0);
-      ctx.moveTo(0, -4); ctx.lineTo(0, 4);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
+    // 1. Draw Background
+    // Neon radial glow simulation
+    const grad = ctx.createRadialGradient(
+      canvasWidth / 2,
+      canvasHeight / 2,
+      200,
+      canvasWidth / 2,
+      canvasHeight / 2,
+      canvasHeight,
+    );
+    grad.addColorStop(0, "#0F0E17"); // slightly lighter center
+    grad.addColorStop(1, "#050508"); // dark edges
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-  // 2. Draw Film Sprockets on Left and Right borders (real photobooth film negative feel)
-  ctx.save();
-  ctx.fillStyle = "#060608"; // darker sidebar
-  ctx.fillRect(0, 0, 50, canvasHeight);
-  ctx.fillRect(canvasWidth - 50, 0, 50, canvasHeight);
-
-  ctx.fillStyle = "rgba(255, 255, 255, 0.02)";
-  ctx.fillRect(0, 0, 50, canvasHeight);
-  ctx.fillRect(canvasWidth - 50, 0, 50, canvasHeight);
-
-  ctx.fillStyle = "#08080C"; // cut out appearance
-  const sprocketH = 16;
-  const sprocketW = 8;
-  const sprocketGap = 35;
-  for (let sy = 15; sy < canvasHeight - 15; sy += sprocketGap) {
+    // Simple clean separator lines for film negative boundary
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    drawRoundRect(ctx, 21, sy, sprocketW, sprocketH, 3);
-    ctx.fill();
+    ctx.moveTo(50, 0);
+    ctx.lineTo(50, canvasHeight);
+    ctx.moveTo(canvasWidth - 50, 0);
+    ctx.lineTo(canvasWidth - 50, canvasHeight);
+    ctx.stroke();
 
-    ctx.beginPath();
-    drawRoundRect(ctx, canvasWidth - 29, sy, sprocketW, sprocketH, 3);
-    ctx.fill();
-  }
-  ctx.restore();
-
-  // 3. Draw Header Branding
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = "italic bold 42px Georgia, serif";
-  ctx.textAlign = "center";
-  ctx.shadowColor = "rgba(139, 92, 246, 0.4)";
-  ctx.shadowBlur = 12;
-  ctx.fillText("titik.temu", canvasWidth / 2, 70);
-  ctx.shadowBlur = 0; // reset shadow
-
-  // Header pill badge
-  ctx.font = "bold 9px monospace";
-  const badgeText = "KOLABORASI HIMA TRPL 2026 • PHOTOBOOTH BOARD";
-  const badgeW = ctx.measureText(badgeText).width + 20;
-  ctx.fillStyle = "rgba(139, 92, 246, 0.15)";
-  ctx.strokeStyle = "rgba(139, 92, 246, 0.6)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  drawRoundRect(ctx, (canvasWidth - badgeW) / 2, 90, badgeW, 20, 10);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = "#C084FC";
-  ctx.fillText(badgeText, canvasWidth / 2, 103);
-
-  ctx.fillStyle = "#64748B";
-  ctx.font = "italic 12px Georgia, serif";
-  ctx.fillText(
-    '"Melebur Tanpa Jarak - Mengukir Kenangan Bersama dalam Lembaran Potret"',
-    canvasWidth / 2,
-    138,
-  );
-
-  // Thin header-to-grid separator line
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(80, 155);
-  ctx.lineTo(canvasWidth - 80, 155);
-  ctx.stroke();
-
-  // 4. Draw Grid of Photos (Center aligned)
-  const totalGridWidth = cols * cellWidth + (cols - 1) * gap;
-  const startX = (canvasWidth - totalGridWidth) / 2;
-
-  for (let idx = 0; idx < count; idx++) {
-    const sub = allSubmissions[idx];
-    const r = Math.floor(idx / cols);
-    const c = idx % cols;
-
-    const cx = startX + c * (cellWidth + gap);
-    const cy = headerHeight + r * (cellHeight + gap);
-
-    // Draw white photobooth borders around each picture
-    ctx.fillStyle = "#FFFFFF";
-    ctx.beginPath();
-    drawRoundRect(ctx, cx - 6, cy - 6, cellWidth + 12, cellHeight + 12, 4);
-    ctx.fill();
-
-    // Inside frame shadow/dark boundary
-    ctx.fillStyle = "#08080C";
-    ctx.fillRect(cx, cy, cellWidth, cellHeight);
-
-    // Draw Image
-    const img = await loadImage(sub.photoUrl);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(cx, cy, cellWidth, cellHeight);
-    ctx.clip();
-
-    // Cover crop center
-    const imgRatio = img.width / img.height;
-    const destRatio = cellWidth / cellHeight;
-    let sx = 0,
-      sy = 0,
-      sw = img.width,
-      sh = img.height;
-    if (imgRatio > destRatio) {
-      sw = img.height * destRatio;
-      sx = (img.width - sw) / 2;
-    } else {
-      sh = img.width / destRatio;
-      sy = (img.height - sh) / 2;
-    }
-    ctx.drawImage(img, sx, sy, sw, sh, cx, cy, cellWidth, cellHeight);
-    ctx.restore();
-
-    // Draw element overlay: random scrapbook accessories (stamps / tape)
-    ctx.save();
-    // Tape decorations on some photos
-    if (idx % 3 === 0) {
-      drawTape(ctx, cx + cellWidth / 2, cy - 2, 90, 14, 0.02);
-    } else if (idx % 3 === 1) {
-      drawTape(ctx, cx + 15, cy + 5, 75, 14, -0.5);
-    } else {
-      drawTape(ctx, cx + cellWidth - 15, cy + 5, 75, 14, 0.5);
-    }
-
-    // Approved stamp overlay on bottom right of some photos
-    if (idx % 4 === 1) {
-      drawStamp(ctx, cx + cellWidth - 10, cy + cellHeight - 10, 24);
-    }
-
-    // Mini barcode label overlay on bottom left of some photos
-    if (idx % 4 === 3) {
-      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-      ctx.beginPath();
-      drawRoundRect(ctx, cx + 12, cy + cellHeight - 20, 60, 14, 3);
-      ctx.fill();
-      drawBarcode(ctx, cx + 17, cy + cellHeight - 16, 50, 7);
-    }
-    ctx.restore();
-  }
-
-  // 5. Draw Footer
-  const fy = canvasHeight - footerHeight;
-
-  // Thin grid-to-footer separator line
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(80, fy + 10);
-  ctx.lineTo(canvasWidth - 80, fy + 10);
-  ctx.stroke();
-
-  // Draw brand footer elements
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = "italic italic bold 28px Georgia, serif";
-  ctx.textAlign = "center";
-  ctx.fillText("titik.temu", canvasWidth / 2, fy + 55);
-
-  ctx.fillStyle = "#64748B";
-  ctx.font = "bold 9px monospace";
-  ctx.fillText(
-    "HIMA TRPL BONDING EVENT • MEMORY SOUVENIR BOARD",
-    canvasWidth / 2,
-    fy + 75,
-  );
-
-  // Draw a centered stylish barcode in the footer
-  drawBarcode(ctx, (canvasWidth - 140) / 2, fy + 88, 140, 18);
-
-  // Draw premium floating emoji stickers
-  const stickers = [
-    { emoji: "✨", x: 200, y: 70, size: 28, angle: -0.2 },
-    { emoji: "🎉", x: 300, y: 120, size: 26, angle: 0.3 },
-    { emoji: "📸", x: 1000, y: 80, size: 28, angle: 0.15 },
-    { emoji: "💖", x: 1150, y: 130, size: 24, angle: -0.4 },
-    { emoji: "✌️", x: 90, y: 220, size: 26, angle: 0.25 },
-    { emoji: "🥳", x: 1110, y: 300, size: 28, angle: -0.15 },
-    { emoji: "💻", x: 100, y: canvasHeight - 200, size: 26, angle: -0.2 },
-    { emoji: "⛺", x: 1110, y: canvasHeight - 240, size: 26, angle: 0.3 },
-    { emoji: "🤝", x: 220, y: canvasHeight - 75, size: 26, angle: -0.1 },
-    { emoji: "🚀", x: 960, y: canvasHeight - 65, size: 28, angle: 0.2 },
-    { emoji: "🔥", x: 1120, y: canvasHeight / 2, size: 24, angle: 0.1 },
-    { emoji: "🌟", x: 80, y: canvasHeight / 2 - 100, size: 26, angle: -0.3 }
-  ];
-
-  stickers.forEach(stk => {
-    if (stk.y < canvasHeight) {
+    // Draw background confetti & sparkle elements
+    const confettiColors = ["#8B5CF6", "#EC4899", "#3B82F6", "#10B981", "#F59E0B", "#EF4444"];
+    for (let ci = 0; ci < 100; ci++) {
+      const cx = 60 + Math.random() * (canvasWidth - 120);
+      const cy = Math.random() * canvasHeight;
+      
       ctx.save();
-      ctx.translate(stk.x, stk.y);
-      ctx.rotate(stk.angle);
+      ctx.translate(cx, cy);
+      ctx.rotate(Math.random() * Math.PI);
+      ctx.fillStyle = confettiColors[ci % confettiColors.length];
+      ctx.globalAlpha = 0.15 + Math.random() * 0.35; // subtle background layer
       
-      // Shadow for sticker depth
-      ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
-      ctx.shadowBlur = 6;
-      ctx.shadowOffsetY = 3;
-
-      // Draw a solid white rounded outline/cutout for sticker effect
-      ctx.fillStyle = "#FFFFFF";
-      ctx.beginPath();
-      ctx.arc(0, 0, stk.size * 0.72, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Reset shadow for emoji drawing so text shadow doesn't look weird
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-
-      // Draw thin inner boundary on the sticker cutout
-      ctx.strokeStyle = "rgba(139, 92, 246, 0.25)";
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.arc(0, 0, stk.size * 0.65, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Draw emoji
-      ctx.font = `${stk.size}px sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(stk.emoji, 0, 1.5);
-      
+      const shape = Math.floor(Math.random() * 3);
+      if (shape === 0) {
+        // Small rectangle
+        ctx.fillRect(-3, -3, 6, 6);
+      } else if (shape === 1) {
+        // Tiny circle
+        ctx.beginPath();
+        ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Sparkle star (cross)
+        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = confettiColors[ci % confettiColors.length];
+        ctx.beginPath();
+        ctx.moveTo(-4, 0); ctx.lineTo(4, 0);
+        ctx.moveTo(0, -4); ctx.lineTo(0, 4);
+        ctx.stroke();
+      }
       ctx.restore();
     }
-  });
 
-  // Trigger download
-  const filename = `titiktemu_himpunan_board_${Date.now()}.png`;
-  triggerDownload(canvas.toDataURL("image/png"), filename);
+    // 2. Draw Film Sprockets on Left and Right borders (real photobooth film negative feel)
+    ctx.save();
+    ctx.fillStyle = "#060608"; // darker sidebar
+    ctx.fillRect(0, 0, 50, canvasHeight);
+    ctx.fillRect(canvasWidth - 50, 0, 50, canvasHeight);
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.02)";
+    ctx.fillRect(0, 0, 50, canvasHeight);
+    ctx.fillRect(canvasWidth - 50, 0, 50, canvasHeight);
+
+    ctx.fillStyle = "#08080C"; // cut out appearance
+    const sprocketH = 16;
+    const sprocketW = 8;
+    const sprocketGap = 35;
+    for (let sy = 15; sy < canvasHeight - 15; sy += sprocketGap) {
+      ctx.beginPath();
+      drawRoundRect(ctx, 21, sy, sprocketW, sprocketH, 3);
+      ctx.fill();
+
+      ctx.beginPath();
+      drawRoundRect(ctx, canvasWidth - 29, sy, sprocketW, sprocketH, 3);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // 3. Draw Header Branding
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "italic bold 42px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.shadowColor = "rgba(139, 92, 246, 0.4)";
+    ctx.shadowBlur = 12;
+    ctx.fillText("titik.temu", canvasWidth / 2, 70);
+    ctx.shadowBlur = 0; // reset shadow
+
+    // Header pill badge
+    ctx.font = "bold 9px monospace";
+    const badgeTextSuffix = cIdx > 0 ? `   ${cIdx + 1}` : "";
+    const badgeText = `KOLABORASI HIMA TRPL 2026 • PHOTOBOOTH BOARD${badgeTextSuffix}`;
+    const badgeW = ctx.measureText(badgeText).width + 20;
+    ctx.fillStyle = "rgba(139, 92, 246, 0.15)";
+    ctx.strokeStyle = "rgba(139, 92, 246, 0.6)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    drawRoundRect(ctx, (canvasWidth - badgeW) / 2, 90, badgeW, 20, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#C084FC";
+    ctx.fillText(badgeText, canvasWidth / 2, 103);
+
+    ctx.fillStyle = "#64748B";
+    ctx.font = "italic 12px Georgia, serif";
+    ctx.fillText(
+      '"Melebur Tanpa Jarak - Mengukir Kenangan Bersama dalam Lembaran Potret"',
+      canvasWidth / 2,
+      138,
+    );
+
+    // Thin header-to-grid separator line
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(80, 155);
+    ctx.lineTo(canvasWidth - 80, 155);
+    ctx.stroke();
+
+    // 4. Draw Grid of Photos (Center aligned)
+    const totalGridWidth = cols * cellWidth + (cols - 1) * gap;
+    const startX = (canvasWidth - totalGridWidth) / 2;
+
+    for (let idx = 0; idx < count; idx++) {
+      const sub = chunkSubmissions[idx];
+      const r = Math.floor(idx / cols);
+      const c = idx % cols;
+
+      const cx = startX + c * (cellWidth + gap);
+      const cy = headerHeight + r * (cellHeight + gap);
+
+      // Draw white photobooth borders around each picture
+      ctx.fillStyle = "#FFFFFF";
+      ctx.beginPath();
+      drawRoundRect(ctx, cx - 6, cy - 6, cellWidth + 12, cellHeight + 12, 4);
+      ctx.fill();
+
+      // Inside frame shadow/dark boundary
+      ctx.fillStyle = "#08080C";
+      ctx.fillRect(cx, cy, cellWidth, cellHeight);
+
+      // Draw Image
+      const img = await loadImage(sub.photoUrl);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(cx, cy, cellWidth, cellHeight);
+      ctx.clip();
+
+      // Cover crop center
+      const imgRatio = img.width / img.height;
+      const destRatio = cellWidth / cellHeight;
+      let sx = 0,
+        sy = 0,
+        sw = img.width,
+        sh = img.height;
+      if (imgRatio > destRatio) {
+        sw = img.height * destRatio;
+        sx = (img.width - sw) / 2;
+      } else {
+        sh = img.width / destRatio;
+        sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, cx, cy, cellWidth, cellHeight);
+      ctx.restore();
+
+      // Draw element overlay: random scrapbook accessories (stamps / tape)
+      ctx.save();
+      // Tape decorations on some photos
+      if (idx % 3 === 0) {
+        drawTape(ctx, cx + cellWidth / 2, cy - 2, 90, 14, 0.02);
+      } else if (idx % 3 === 1) {
+        drawTape(ctx, cx + 15, cy + 5, 75, 14, -0.5);
+      } else {
+        drawTape(ctx, cx + cellWidth - 15, cy + 5, 75, 14, 0.5);
+      }
+
+      // Approved stamp overlay on bottom right of some photos (enlarged)
+      if (idx % 4 === 1) {
+        drawStamp(ctx, cx + cellWidth - 25, cy + cellHeight - 25, 38);
+      }
+
+      // Mini barcode label overlay on bottom left of some photos
+      if (idx % 4 === 3) {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.beginPath();
+        drawRoundRect(ctx, cx + 12, cy + cellHeight - 20, 60, 14, 3);
+        ctx.fill();
+        drawBarcode(ctx, cx + 17, cy + cellHeight - 16, 50, 7);
+      }
+      ctx.restore();
+    }
+
+    // 5. Draw Footer
+    const fy = canvasHeight - footerHeight;
+
+    // Thin grid-to-footer separator line
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(80, fy + 10);
+    ctx.lineTo(canvasWidth - 80, fy + 10);
+    ctx.stroke();
+
+    // Draw brand footer elements
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "italic italic bold 28px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillText("titik.temu", canvasWidth / 2, fy + 55);
+
+    ctx.fillStyle = "#64748B";
+    ctx.font = "bold 9px monospace";
+    ctx.fillText(
+      "HIMA TRPL BONDING EVENT • MEMORY SOUVENIR BOARD",
+      canvasWidth / 2,
+      fy + 75,
+    );
+
+    // Draw a centered stylish barcode in the footer
+    drawBarcode(ctx, (canvasWidth - 140) / 2, fy + 88, 140, 18);
+
+    // Draw premium floating emoji stickers with abstract / varying sizes
+    const stickers = [
+      { emoji: "✨", x: 200, y: 70, size: 36, angle: -0.2 }, // big sparkle
+      { emoji: "🎉", x: 300, y: 120, size: 20, angle: 0.3 }, // small party popper
+      { emoji: "📸", x: 1000, y: 80, size: 34, angle: 0.15 }, // big camera
+      { emoji: "💖", x: 1150, y: 130, size: 18, angle: -0.4 }, // small heart
+      { emoji: "✌️", x: 90, y: 220, size: 32, angle: 0.25 },
+      { emoji: "🥳", x: 1110, y: 300, size: 26, angle: -0.15 },
+      { emoji: "💻", x: 100, y: canvasHeight - 200, size: 22, angle: -0.2 },
+      { emoji: "⛺", x: 1110, y: canvasHeight - 240, size: 30, angle: 0.3 },
+      { emoji: "🤝", x: 220, y: canvasHeight - 75, size: 24, angle: -0.1 },
+      { emoji: "🚀", x: 960, y: canvasHeight - 65, size: 35, angle: 0.2 },
+      { emoji: "🔥", x: 1120, y: canvasHeight / 2, size: 19, angle: 0.1 },
+      { emoji: "🌟", x: 80, y: canvasHeight / 2 - 100, size: 38, angle: -0.3 }
+    ];
+
+    // Add extra random organic sticker elements with abstract/varied sizes
+    const extraEmojis = ["✨", "💖", "🌟", "🎉", "🔥", "👀", "🌸", "⭐"];
+    for (let k = 0; k < 8; k++) {
+      const rx = 80 + Math.random() * (canvasWidth - 160);
+      const ry = 150 + Math.random() * (canvasHeight - 280);
+      const rSize = 16 + Math.random() * 22; // 16px to 38px
+      const rAngle = (Math.random() - 0.5) * 0.8;
+      
+      stickers.push({
+        emoji: extraEmojis[k % extraEmojis.length],
+        x: rx,
+        y: ry,
+        size: Math.round(rSize),
+        angle: rAngle
+      });
+    }
+
+    stickers.forEach(stk => {
+      if (stk.y < canvasHeight) {
+        ctx.save();
+        ctx.translate(stk.x, stk.y);
+        ctx.rotate(stk.angle);
+        
+        // Shadow for sticker depth
+        ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetY = 3;
+
+        // Draw a solid white rounded outline/cutout for sticker effect
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(0, 0, stk.size * 0.72, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Reset shadow for emoji drawing so text shadow doesn't look weird
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+
+        // Draw thin inner boundary on the sticker cutout
+        ctx.strokeStyle = "rgba(139, 92, 246, 0.25)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, stk.size * 0.65, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Draw emoji
+        ctx.font = `${stk.size}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(stk.emoji, 0, 1.5);
+        
+        ctx.restore();
+      }
+    });
+
+    // Trigger download for this chunk/part
+    const filenameSuffix = cIdx > 0 ? `_${cIdx + 1}` : "";
+    const filename = `titiktemu_himpunan_board_${Date.now()}${filenameSuffix}.png`;
+    triggerDownload(canvas.toDataURL("image/png"), filename);
+  }
 };

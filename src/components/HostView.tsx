@@ -771,8 +771,9 @@ export const HostView: React.FC = () => {
                     </span>
                     
                     {/* Approved Stamp */}
-                    <div className="w-7 h-7 rounded-full border border-dashed border-rose-500/40 flex items-center justify-center text-[5px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/5 flex-shrink-0">
-                      APPROVED
+                    <div className="w-12 h-12 rounded-full border border-dashed border-rose-500/50 flex flex-col items-center justify-center text-[7px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/10 flex-shrink-0 font-bold leading-none">
+                      <span>TRPL</span>
+                      <span className="text-[6px]">APPROVED</span>
                     </div>
                   </div>
 
@@ -908,9 +909,9 @@ export const HostView: React.FC = () => {
                   </div>
                   
                   {/* Approved Stamp */}
-                  <div className="w-10 h-10 rounded-full border-2 border-dashed border-rose-500/50 flex flex-col items-center justify-center text-[7px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/10 font-bold flex-shrink-0">
+                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-rose-500/60 flex flex-col items-center justify-center text-[10px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/15 font-bold flex-shrink-0 leading-tight">
                     <span>TRPL</span>
-                    <span className="text-[6px]">APPROVED</span>
+                    <span className="text-[8px]">APPROVED</span>
                   </div>
                 </div>
 

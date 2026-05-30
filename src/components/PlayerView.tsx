@@ -548,8 +548,9 @@ export const PlayerView: React.FC = () => {
                         </span>
                         
                         {/* Approved Stamp */}
-                        <div className="w-7 h-7 rounded-full border border-dashed border-rose-500/40 flex items-center justify-center text-[5px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/5 flex-shrink-0">
-                          APPROVED
+                        <div className="w-12 h-12 rounded-full border border-dashed border-rose-500/50 flex flex-col items-center justify-center text-[7px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/10 flex-shrink-0 font-bold leading-none">
+                          <span>TRPL</span>
+                          <span className="text-[6px]">APPROVED</span>
                         </div>
                       </div>
 
@@ -674,9 +675,9 @@ export const PlayerView: React.FC = () => {
                   </span>
                   
                   {/* Approved stamp */}
-                  <div className="w-9 h-9 rounded-full border-2 border-dashed border-rose-500/50 flex flex-col items-center justify-center text-[6px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/10 font-bold">
+                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-rose-500/60 flex flex-col items-center justify-center text-[10px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/15 font-bold leading-tight">
                     <span>TRPL</span>
-                    <span className="text-[5px]">APPROVED</span>
+                    <span className="text-[8px]">APPROVED</span>
                   </div>
                 </div>
 
@@ -795,7 +796,7 @@ export const PlayerView: React.FC = () => {
                   TANTANGAN #{activeChallengeIndex}
                 </span>
                 {/* Approved Stamp */}
-                <div className="px-1 py-0.2 bg-rose-950/40 border border-dashed border-rose-500/30 rounded text-[5px] font-mono text-rose-400 rotate-[-4deg]">
+                <div className="px-2 py-0.5 bg-rose-950/50 border border-dashed border-rose-500/40 rounded text-[7px] font-mono text-rose-400 rotate-[-4deg] font-bold">
                   OK
                 </div>
               </div>
