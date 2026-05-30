@@ -111,6 +111,171 @@ const triggerDownload = (dataUrl: string, filename: string) => {
   document.body.removeChild(link);
 };
 
+// Helper to draw rounded rectangle with fallback compatibility
+const drawRoundRect = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) => {
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+};
+
+// Helper to draw vintage circular "HIMA TRPL APPROVED" stamp
+const drawStamp = (ctx: CanvasRenderingContext2D, cx: number, cy: number, radius: number) => {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(244, 63, 94, 0.7)'; // retro rose red
+  ctx.lineWidth = 2;
+  
+  // Outer circular border
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // Inner circular border
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius - 5, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // Inner decorative text and lines
+  ctx.fillStyle = 'rgba(244, 63, 94, 0.7)';
+  ctx.font = 'bold 8px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-0.15); // Authentic retro stamp tilt
+  ctx.font = 'bold 9px monospace';
+  ctx.fillText('APPROVED', 0, -4);
+  ctx.font = '7px sans-serif';
+  ctx.fillText('HIMA TRPL', 0, 7);
+  ctx.restore();
+  
+  ctx.restore();
+};
+
+// Helper to draw realistic barcode at the bottom
+const drawBarcode = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) => {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+  let currentX = x;
+  const barcodePattern = [2, 1, 3, 1, 2, 4, 1, 2, 3, 2, 1, 2, 2, 1, 3, 1, 2, 1, 4, 2, 1, 3];
+  
+  let i = 0;
+  while (currentX < x + width) {
+    const barWidth = barcodePattern[i % barcodePattern.length];
+    const isBlack = (i % 2 === 0);
+    if (isBlack) {
+      ctx.fillRect(currentX, y, barWidth, height);
+    }
+    currentX += barWidth + 1;
+    i++;
+  }
+  
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.font = '7px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('TRPL-BONDING-2026', x, y + height + 9);
+  ctx.restore();
+};
+
+// Helper to draw semi-transparent glassy washi tape
+const drawTape = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, angle: number) => {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  
+  // Semi-transparent color blend
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+  ctx.lineWidth = 1;
+  
+  // Draw base tape body
+  ctx.fillRect(-width / 2, -height / 2, width, height);
+  
+  // Shiny glass refraction gradient
+  const grad = ctx.createLinearGradient(-width / 2, -height / 2, width / 2, height / 2);
+  grad.addColorStop(0, 'rgba(255, 255, 255, 0.18)');
+  grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.04)');
+  grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(-width / 2, -height / 2, width, height);
+  
+  // Draw detailed jagged/torn edges
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.beginPath();
+  
+  // Left side torn effect
+  let currY = -height / 2;
+  ctx.moveTo(-width / 2, currY);
+  while (currY < height / 2) {
+    currY += 3;
+    const offset = Math.sin(currY * 1.5) * 1.5;
+    ctx.lineTo(-width / 2 + offset, currY);
+  }
+  
+  // Bottom border
+  ctx.lineTo(width / 2, height / 2);
+  
+  // Right side torn effect
+  currY = height / 2;
+  while (currY > -height / 2) {
+    currY -= 3;
+    const offset = Math.cos(currY * 1.5) * 1.5;
+    ctx.lineTo(width / 2 + offset, currY);
+  }
+  
+  // Top border
+  ctx.closePath();
+  ctx.stroke();
+  
+  ctx.restore();
+};
+
+// Helper to draw glowing Challenge Badge pill
+const drawChallengeBadge = (ctx: CanvasRenderingContext2D, text: string, x: number, y: number) => {
+  ctx.save();
+  ctx.font = 'bold 9px monospace';
+  const textWidth = ctx.measureText(text.toUpperCase()).width;
+  const paddingH = 10;
+  const badgeWidth = textWidth + paddingH * 2;
+  const badgeHeight = 20;
+  
+  // Pill container
+  ctx.fillStyle = 'rgba(139, 92, 246, 0.15)'; // violet opacity
+  ctx.strokeStyle = 'rgba(139, 92, 246, 0.6)'; // violet border
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  drawRoundRect(ctx, x, y - badgeHeight / 2, badgeWidth, badgeHeight, 10);
+  ctx.fill();
+  ctx.stroke();
+  
+  // Text
+  ctx.fillStyle = '#C084FC';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text.toUpperCase(), x + badgeWidth / 2, y + 0.5);
+  
+  ctx.restore();
+};
+
 /**
  * Downloads a single Polaroid themed photo
  */
@@ -127,47 +292,100 @@ export const downloadSinglePolaroid = async (
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // 1. Draw Background
-  // Deep dark theme to match "titik.temu" style
-  ctx.fillStyle = '#0D0D12';
+  // 1. Draw Background Space
+  ctx.fillStyle = '#08080C';
   ctx.fillRect(0, 0, width, height);
 
-  // Decorative subtle inner frame
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+  // Subtle radial gradient center glow
+  const bgGlow = ctx.createRadialGradient(width / 2, height / 2, 50, width / 2, height / 2, 600);
+  bgGlow.addColorStop(0, 'rgba(99, 102, 241, 0.08)'); // indigo glow
+  bgGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = bgGlow;
+  ctx.fillRect(0, 0, width, height);
+
+  // Draw futuristic grid lines
+  ctx.strokeStyle = 'rgba(99, 102, 241, 0.025)';
+  ctx.lineWidth = 1;
+  const gridSpacing = 25;
+  for (let gx = 0; gx < width; gx += gridSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(gx, 0);
+    ctx.lineTo(gx, height);
+    ctx.stroke();
+  }
+  for (let gy = 0; gy < height; gy += gridSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(0, gy);
+    ctx.lineTo(width, gy);
+    ctx.stroke();
+  }
+
+  // Glowing Outer Neon Double Frame
+  ctx.save();
+  ctx.shadowColor = 'rgba(139, 92, 246, 0.4)';
+  ctx.shadowBlur = 12;
+  ctx.strokeStyle = 'rgba(139, 92, 246, 0.2)';
   ctx.lineWidth = 1;
   ctx.strokeRect(10, 10, width - 20, height - 20);
+  ctx.restore();
 
-  // 2. Draw Polaroid Card frame (lighter dark gray)
-  ctx.fillStyle = '#161622';
+  // 2. Draw Polaroid Card frame (lighter charcoal board)
+  ctx.fillStyle = '#12121A';
   ctx.beginPath();
-  ctx.roundRect(30, 30, width - 60, height - 80, 16);
+  drawRoundRect(ctx, 30, 30, width - 60, height - 80, 20);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(99, 102, 241, 0.2)'; // indigo accent border
-  ctx.lineWidth = 2;
+  
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  drawRoundRect(ctx, 31, 31, width - 62, height - 82, 19);
   ctx.stroke();
 
-  // 3. Draw The Main Photo
-  const photoWidth = width - 100; // 500px
-  const photoHeight = 550; // ratio approx 4:4.4, close to 4:5
+  // Draw cyber crop brackets in 4 corners of the card
+  ctx.strokeStyle = 'rgba(99, 102, 241, 0.4)';
+  ctx.lineWidth = 2;
+  const cSize = 10;
+  // Top-left
+  ctx.beginPath();
+  ctx.moveTo(42 + cSize, 42); ctx.lineTo(42, 42); ctx.lineTo(42, 42 + cSize);
+  ctx.stroke();
+  // Top-right
+  ctx.beginPath();
+  ctx.moveTo(width - 42 - cSize, 42); ctx.lineTo(width - 42, 42); ctx.lineTo(width - 42, 42 + cSize);
+  ctx.stroke();
+  // Bottom-left
+  ctx.beginPath();
+  ctx.moveTo(42 + cSize, height - 62); ctx.lineTo(42, height - 62); ctx.lineTo(42, height - 62 - cSize);
+  ctx.stroke();
+  // Bottom-right
+  ctx.beginPath();
+  ctx.moveTo(width - 42 - cSize, height - 62); ctx.lineTo(width - 42, height - 62); ctx.lineTo(width - 42, height - 62 - cSize);
+  ctx.stroke();
+
+  // 3. Draw The Main Photo slot (with white photo boundary frame)
   const px = 50;
   const py = 50;
+  const photoW = 500;
+  const photoH = 510;
 
-  // Draw photo container background
+  // Thin clean borders around photo container
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(px - 3, py - 3, photoW + 6, photoH + 6);
+
   ctx.fillStyle = '#08080C';
-  ctx.beginPath();
-  ctx.roundRect(px, py, photoWidth, photoHeight, 8);
-  ctx.fill();
+  ctx.fillRect(px, py, photoW, photoH);
 
+  // Draw captured image
   const img = await loadImage(sub.photoUrl);
   ctx.save();
-  // Clip to image container with rounded corners
   ctx.beginPath();
-  ctx.roundRect(px, py, photoWidth, photoHeight, 8);
+  ctx.rect(px, py, photoW, photoH);
   ctx.clip();
 
-  // Draw image with cover aspect ratio
+  // Fit cover ratio
   const imgRatio = img.width / img.height;
-  const destRatio = photoWidth / photoHeight;
+  const destRatio = photoW / photoH;
   let sx = 0, sy = 0, sw = img.width, sh = img.height;
   if (imgRatio > destRatio) {
     sw = img.height * destRatio;
@@ -176,69 +394,89 @@ export const downloadSinglePolaroid = async (
     sh = img.width / destRatio;
     sy = (img.height - sh) / 2;
   }
-  ctx.drawImage(img, sx, sy, sw, sh, px, py, photoWidth, photoHeight);
+  ctx.drawImage(img, sx, sy, sw, sh, px, py, photoW, photoH);
   ctx.restore();
 
-  // 4. Draw Neon tape overlay at the top middle of the photo
-  ctx.fillStyle = 'rgba(244, 63, 94, 0.15)'; // soft rose glass tape
-  ctx.strokeStyle = 'rgba(244, 63, 94, 0.4)';
-  ctx.lineWidth = 1;
-  ctx.save();
-  ctx.translate(width / 2, 40);
-  ctx.rotate(-0.05); // slight angle
-  ctx.fillRect(-60, -10, 120, 20);
-  ctx.strokeRect(-60, -10, 120, 20);
-  ctx.restore();
+  // Outline of photo slot
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(px, py, photoW, photoH);
 
-  // 5. Draw Footer Text (Polaroid bottom area)
-  // Challenge Name / Title
+  // 4. Draw transparent tape at the top middle of photo
+  drawTape(ctx, width / 2, 50, 110, 18, -0.03);
+
+  // 5. Draw Footer elements (Typography & Ornaments)
   const title = challengeTitle || `Tantangan #${sub.challengeId}`;
-  ctx.fillStyle = '#94A3B8'; // gray-400
-  ctx.font = 'bold 12px monospace';
-  ctx.fillText(title.toUpperCase(), 60, 640);
+  
+  // Challenge capsule badge
+  drawChallengeBadge(ctx, title, 60, 600);
 
   // Player Name
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'italic italic bold 28px Georgia, serif';
-  ctx.fillText(sub.playerName, 60, 680);
+  ctx.font = 'bold italic 28px Georgia, serif';
+  ctx.fillText(sub.playerName, 60, 650);
 
   // Tagged partners if any
   if (sub.detectedPlayers && sub.detectedPlayers.length > 1) {
     const tags = sub.detectedPlayers.filter(p => p !== sub.playerName).join(', ');
     if (tags) {
       ctx.fillStyle = '#818CF8'; // indigo-400
-      ctx.font = '11px sans-serif';
-      ctx.fillText(`bersama: ${tags}`, 60, 705);
+      ctx.font = 'italic 11px sans-serif';
+      ctx.fillText(`with: ${tags}`, 60, 678);
     }
   }
 
-  // Divider line
+  // Draw HIMA TRPL approved stamp seal
+  drawStamp(ctx, 475, 630, 32);
+
+  // Decorative divider line (dashed)
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
   ctx.beginPath();
-  ctx.moveTo(60, 725);
-  ctx.lineTo(width - 60, 725);
+  ctx.moveTo(60, 698);
+  ctx.lineTo(width - 60, 698);
+  ctx.stroke();
+  ctx.setLineDash([]); // Reset line dash
+
+  // Deep answer quote block
+  const quoteBoxY = 712;
+  const quoteBoxH = 78;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  drawRoundRect(ctx, 60, quoteBoxY, width - 120, quoteBoxH, 10);
+  ctx.fill();
   ctx.stroke();
 
-  // Deep answer text (with wrapping)
-  ctx.fillStyle = '#E2E8F0'; // gray-200
-  ctx.font = 'italic 15px Georgia, serif';
-  wrapText(ctx, `"${sub.answer}"`, 60, 755, width - 120, 22, 4);
+  // Quote symbols
+  ctx.fillStyle = 'rgba(139, 92, 246, 0.15)';
+  ctx.font = 'italic bold 48px Georgia, serif';
+  ctx.fillText('“', 72, quoteBoxY + 38);
 
-  // Logo Brand printed at bottom right
-  ctx.fillStyle = '#818CF8';
-  ctx.font = 'italic bold 18px Georgia, serif';
+  // Quote text wrapped inside quote box
+  ctx.fillStyle = '#CBD5E1';
+  ctx.font = 'italic 13px Georgia, serif';
+  wrapText(ctx, `"${sub.answer}"`, 105, quoteBoxY + 28, width - 180, 18, 2);
+
+  // 6. Draw Barcode at the bottom
+  drawBarcode(ctx, 60, 810, 110, 15);
+
+  // Brand Name & HIMA TRPL signature
+  ctx.fillStyle = '#E2E8F0';
+  ctx.font = 'italic bold 16px Georgia, serif';
   ctx.textAlign = 'right';
-  ctx.fillText('titik.temu', width - 60, 845);
+  ctx.fillText('titik.temu', width - 60, 822);
 
   ctx.fillStyle = '#475569';
   ctx.font = '9px monospace';
-  ctx.fillText('HIMA TRPL BONDING 2026', width - 60, 860);
+  ctx.fillText('HIMA TRPL BONDING 2026', width - 60, 836);
 
   // Reset text align
   ctx.textAlign = 'left';
 
-  // 6. Download file
+  // 7. Save and trigger download
   const filename = `polaroid_${sub.playerName.replace(/\s+/g, '_')}_challenge_${sub.challengeId}.png`;
   triggerDownload(canvas.toDataURL('image/png'), filename);
 };

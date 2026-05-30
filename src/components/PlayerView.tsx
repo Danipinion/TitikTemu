@@ -511,16 +511,23 @@ export const PlayerView: React.FC = () => {
                   <div
                     key={idx}
                     onClick={() => setSelectedSub(sub)}
-                    className="bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-xl hover:shadow-[0_10px_30px_rgba(99,102,241,0.25)] transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
+                    className="bg-[#12121A]/85 border border-white/5 hover:border-violet-500/40 rounded-2xl p-4 shadow-xl hover:shadow-[0_12px_40px_rgba(139,92,246,0.22)] transition-all duration-300 flex flex-col justify-between group relative overflow-hidden cursor-pointer"
                   >
                     {/* Visual Polaroid Tape */}
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-5 bg-white/10 backdrop-blur-md border border-white/20 rotate-[-3deg] z-10 opacity-70" />
+                    <div className="absolute top-[16px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-4 bg-white/10 border-l border-r border-dashed border-white/20 backdrop-blur-[2px] rotate-[-2deg] z-10 pointer-events-none shadow-[0_1px_3px_rgba(0,0,0,0.1)]" />
 
-                    <div className="aspect-[4/5] bg-black rounded-lg overflow-hidden relative">
+                    {/* Corner crop brackets */}
+                    <div className="absolute top-2 left-2 w-2 h-2 border-t border-l border-violet-500/30 pointer-events-none" />
+                    <div className="absolute top-2 right-2 w-2 h-2 border-t border-r border-violet-500/30 pointer-events-none" />
+                    <div className="absolute bottom-2 left-2 w-2 h-2 border-b border-l border-violet-500/30 pointer-events-none" />
+                    <div className="absolute bottom-2 right-2 w-2 h-2 border-b border-r border-violet-500/30 pointer-events-none" />
+
+                    {/* Photo frame wrapper */}
+                    <div className="p-1 bg-[#09090D] border border-white/5 rounded-xl aspect-[4/5] relative overflow-hidden group-hover:shadow-[0_0_15px_rgba(99,102,241,0.2)] transition-shadow duration-300">
                       <img
                         src={sub.photoUrl}
                         alt="Polaroid"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover rounded-lg"
                       />
 
                       {/* Face recognition tags overlay */}
@@ -532,17 +539,30 @@ export const PlayerView: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="mt-4 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] font-mono text-zinc-500 uppercase">
+                    {/* Card metadata & text */}
+                    <div className="mt-4 space-y-3">
+                      {/* Challenge capsule & stamp */}
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="px-2.5 py-0.5 bg-violet-950/40 border border-violet-500/30 text-violet-300 rounded-full text-[8px] font-mono tracking-wider font-semibold uppercase truncate max-w-[130px]">
                           {challengeTitle}
                         </span>
-                        <span className="text-xs font-serif italic text-indigo-300 font-semibold">
+                        
+                        {/* Approved Stamp */}
+                        <div className="w-7 h-7 rounded-full border border-dashed border-rose-500/40 flex items-center justify-center text-[5px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/5 flex-shrink-0">
+                          APPROVED
+                        </div>
+                      </div>
+
+                      {/* Player name */}
+                      <div className="flex justify-between items-baseline gap-2">
+                        <span className="text-xs font-serif italic text-white font-bold truncate">
                           {sub.playerName}
                         </span>
                       </div>
-                      <div className="flex justify-between items-start gap-2 border-t border-white/5 pt-2">
-                        <p className="text-xs font-sans text-zinc-300 italic leading-relaxed flex-grow">
+
+                      {/* Answer section */}
+                      <div className="flex justify-between items-start gap-2 border-t border-white/5 pt-2.5">
+                        <p className="text-[11px] font-sans text-zinc-300 italic leading-relaxed line-clamp-2 flex-grow">
                           "{sub.answer}"
                         </p>
                         <button
@@ -568,6 +588,23 @@ export const PlayerView: React.FC = () => {
                           </svg>
                         </button>
                       </div>
+
+                      {/* Barcode & Brand footer */}
+                      <div className="flex justify-between items-center pt-1 border-t border-white/5 opacity-50">
+                        {/* CSS Barcode */}
+                        <div className="flex items-center gap-[1px]">
+                          <div className="w-[1.5px] h-2.5 bg-white"></div>
+                          <div className="w-[1px] h-2.5 bg-white"></div>
+                          <div className="w-[2.5px] h-2.5 bg-white"></div>
+                          <div className="w-[1px] h-2.5 bg-white"></div>
+                          <div className="w-[1.5px] h-2.5 bg-white"></div>
+                          <div className="w-[3px] h-2.5 bg-white"></div>
+                          <div className="w-[1px] h-2.5 bg-white"></div>
+                        </div>
+                        <span className="text-[8px] font-serif italic text-zinc-500">
+                          titik.temu
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -583,62 +620,111 @@ export const PlayerView: React.FC = () => {
             onClick={() => setSelectedSub(null)}
           >
             <div
-              className="max-w-xs w-full bg-zinc-950 border border-white/10 rounded-3xl p-5 shadow-2xl flex flex-col gap-4 relative"
+              className="max-w-sm w-full bg-[#12121A] border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col gap-5 relative overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Visual Polaroid Tape */}
+              <div className="absolute top-[22px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-28 h-5 bg-white/10 border-l border-r border-dashed border-white/20 backdrop-blur-[2px] rotate-[-2deg] z-10 pointer-events-none shadow-[0_1px_3px_rgba(0,0,0,0.15)]" />
+
+              {/* Corner crop brackets */}
+              <div className="absolute top-3 left-3 w-3 h-3 border-t border-l border-violet-500/35 pointer-events-none" />
+              <div className="absolute top-3 right-3 w-3 h-3 border-t border-r border-violet-500/35 pointer-events-none" />
+              <div className="absolute bottom-3 left-3 w-3 h-3 border-b border-l border-violet-500/35 pointer-events-none" />
+              <div className="absolute bottom-3 right-3 w-3 h-3 border-b border-r border-violet-500/35 pointer-events-none" />
+
               <button
                 onClick={() => setSelectedSub(null)}
-                className="absolute top-4 right-4 text-zinc-500 hover:text-white font-mono text-xs"
+                className="absolute top-4 right-4 text-zinc-500 hover:text-white font-mono text-[10px] tracking-wider z-20"
               >
                 ✕ Tutup
               </button>
 
-              <div className="aspect-[4/5] bg-black rounded-xl overflow-hidden shadow-inner">
+              {/* Photo frame wrapper */}
+              <div className="p-1 bg-[#09090D] border border-white/5 rounded-2xl aspect-[4/5] relative overflow-hidden shadow-inner mt-4">
                 <img
                   src={selectedSub.photoUrl}
                   alt="Detail"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-xl"
                 />
+                
+                {/* Face recognition tags overlay inside photo */}
+                {selectedSub.detectedPlayers &&
+                  selectedSub.detectedPlayers.length > 0 && (
+                    <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1">
+                      {selectedSub.detectedPlayers.map(
+                        (pn: string, pidx: number) => (
+                          <span
+                            key={pidx}
+                            className="px-2 py-0.5 bg-emerald-950/85 border border-emerald-500/25 backdrop-blur-md rounded-md text-[8px] font-mono text-emerald-300"
+                          >
+                            ✓ {pn}
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  )}
               </div>
 
-              <div className="flex flex-col gap-3 py-1">
+              {/* Card metadata & details */}
+              <div className="space-y-4">
+                {/* Challenge title & Approved stamp */}
+                <div className="flex justify-between items-center">
+                  <span className="px-3 py-1 bg-violet-950/50 border border-violet-500/35 text-violet-300 rounded-full text-[9px] font-mono tracking-widest font-bold uppercase truncate max-w-[170px]">
+                    {CHALLENGES[selectedSub.challengeId - 1]?.title || "TANTANGAN"}
+                  </span>
+                  
+                  {/* Approved stamp */}
+                  <div className="w-9 h-9 rounded-full border-2 border-dashed border-rose-500/50 flex flex-col items-center justify-center text-[6px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/10 font-bold">
+                    <span>TRPL</span>
+                    <span className="text-[5px]">APPROVED</span>
+                  </div>
+                </div>
+
+                {/* Player details */}
                 <div>
-                  <span className="text-[9px] font-mono text-indigo-400 tracking-wider">
+                  <span className="text-[8px] font-mono text-indigo-400 tracking-widest uppercase">
                     OLEH
                   </span>
-                  <h3 className="text-base font-serif text-white italic mt-0.5">
+                  <h3 className="text-xl font-serif text-white italic font-bold">
                     {selectedSub.playerName}
                   </h3>
                 </div>
 
-                {selectedSub.detectedPlayers &&
-                  selectedSub.detectedPlayers.length > 0 && (
-                    <div>
-                      <span className="text-[9px] font-mono text-emerald-400 tracking-wider">
-                        AI DETECTED ({selectedSub.detectedPlayers.length})
-                      </span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {selectedSub.detectedPlayers.map(
-                          (pn: string, pidx: number) => (
-                            <span
-                              key={pidx}
-                              className="px-2 py-0.5 bg-emerald-950/40 border border-emerald-500/20 rounded-md text-[8px] font-mono text-emerald-300"
-                            >
-                              ✓ {pn}
-                            </span>
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                <div>
-                  <span className="text-[9px] font-mono text-rose-400 tracking-wider">
-                    JAWABAN
-                  </span>
-                  <p className="text-xs font-sans text-zinc-300 leading-relaxed italic mt-1 bg-white/5 border border-white/5 rounded-lg p-3">
+                {/* Answer box */}
+                <div className="relative bg-[#181825] border border-white/5 rounded-2xl p-4 shadow-inner">
+                  <span className="absolute top-1 left-2 text-violet-500/20 font-serif italic text-4xl select-none">“</span>
+                  <p className="text-xs font-sans text-zinc-300 leading-relaxed italic relative pl-4">
                     "{selectedSub.answer}"
                   </p>
+                </div>
+
+                {/* Barcode & Brand footer */}
+                <div className="flex justify-between items-end pt-2 border-t border-white/5">
+                  <div className="space-y-1">
+                    {/* CSS Barcode */}
+                    <div className="flex items-center gap-[1px] opacity-60">
+                      <div className="w-[2px] h-3.5 bg-white"></div>
+                      <div className="w-[1px] h-3.5 bg-white"></div>
+                      <div className="w-[3px] h-3.5 bg-white"></div>
+                      <div className="w-[1px] h-3.5 bg-white"></div>
+                      <div className="w-[2px] h-3.5 bg-white"></div>
+                      <div className="w-[4px] h-3.5 bg-white"></div>
+                      <div className="w-[1px] h-3.5 bg-white"></div>
+                      <div className="w-[2px] h-3.5 bg-white"></div>
+                    </div>
+                    <span className="block text-[7px] font-mono text-zinc-500 uppercase tracking-widest">
+                      TRPL-BONDING-2026
+                    </span>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="block text-sm font-serif italic font-bold text-white leading-none">
+                      titik.temu
+                    </span>
+                    <span className="text-[8px] font-mono text-zinc-500">
+                      BONDING SOUVENIR
+                    </span>
+                  </div>
                 </div>
 
                 <button
@@ -649,7 +735,7 @@ export const PlayerView: React.FC = () => {
                       chal ? chal.title : undefined,
                     );
                   }}
-                  className="w-full mt-2 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5"
+                  className="w-full mt-3 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -682,20 +768,51 @@ export const PlayerView: React.FC = () => {
 
         <div className="w-full flex-grow flex flex-col justify-center items-center text-center max-w-sm mx-auto">
           {/* Polaroid Mini Preview */}
-          <div className="w-48 bg-zinc-900 border border-white/10 rounded-xl p-3 shadow-2xl transform rotate-[-2deg] mb-6 relative">
-            <div className="w-full aspect-[4/5] bg-black rounded overflow-hidden">
+          <div className="w-48 bg-[#12121A] border border-white/5 rounded-xl p-3.5 shadow-2xl transform rotate-[-2deg] mb-6 relative overflow-hidden">
+            {/* Visual Polaroid Tape */}
+            <div className="absolute top-[12px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-14 h-3 bg-white/10 border-l border-r border-dashed border-white/20 backdrop-blur-[2px] rotate-[-2deg] z-10 pointer-events-none" />
+
+            {/* Corner crop brackets */}
+            <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 border-t border-l border-violet-500/30 pointer-events-none" />
+            <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 border-t border-r border-violet-500/30 pointer-events-none" />
+            <div className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 border-b border-l border-violet-500/30 pointer-events-none" />
+            <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 border-b border-r border-violet-500/30 pointer-events-none" />
+
+            {/* Photo frame wrapper */}
+            <div className="p-0.5 bg-[#09090D] border border-white/5 rounded-lg aspect-[4/5] relative overflow-hidden">
               {capturedPreview && (
                 <img
                   src={capturedPreview}
                   alt="Captured"
-                  className="w-full h-full object-cover grayscale brightness-90 opacity-70"
+                  className="w-full h-full object-cover rounded"
                 />
               )}
             </div>
-            <div className="mt-2 text-left">
-              <p className="text-[9px] font-serif italic text-zinc-500">
-                "{deepAnswer.substring(0, 35)}..."
-              </p>
+            
+            <div className="mt-3 space-y-2 text-left">
+              <div className="flex justify-between items-center gap-1">
+                <span className="text-[7px] font-mono text-zinc-500 uppercase truncate max-w-[80px]">
+                  TANTANGAN #{activeChallengeIndex}
+                </span>
+                {/* Approved Stamp */}
+                <div className="px-1 py-0.2 bg-rose-950/40 border border-dashed border-rose-500/30 rounded text-[5px] font-mono text-rose-400 rotate-[-4deg]">
+                  OK
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center pt-1 border-t border-white/5 opacity-55">
+                {/* CSS Barcode */}
+                <div className="flex items-center gap-[0.5px]">
+                  <div className="w-[1px] h-2 bg-white"></div>
+                  <div className="w-[0.5px] h-2 bg-white"></div>
+                  <div className="w-[1.5px] h-2 bg-white"></div>
+                  <div className="w-[0.5px] h-2 bg-white"></div>
+                  <div className="w-[1px] h-2 bg-white"></div>
+                </div>
+                <span className="text-[7px] font-serif italic text-zinc-600">
+                  titik.temu
+                </span>
+              </div>
             </div>
           </div>
 

@@ -507,30 +507,57 @@ export const HostView: React.FC = () => {
                 {currentSubmissions.map((sub, idx) => (
                   <div
                     key={idx}
-                    className="bg-zinc-900 border border-white/5 rounded-xl p-2.5 shadow-xl hover:scale-[1.02] transition-transform duration-300 cursor-pointer flex flex-col justify-between"
+                    className="bg-[#12121A] border border-white/5 hover:border-violet-500/30 rounded-xl p-3 shadow-lg hover:shadow-[0_8px_25px_rgba(139,92,246,0.15)] hover:scale-[1.02] transition-all duration-300 cursor-pointer flex flex-col justify-between relative overflow-hidden"
                     onClick={() => setSelectedSub(sub)}
                   >
-                    <div className="aspect-[4/5] bg-black rounded-lg overflow-hidden relative">
+                    {/* Visual Polaroid Tape */}
+                    <div className="absolute top-[10px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-14 h-3 bg-white/10 border-l border-r border-dashed border-white/20 backdrop-blur-[2px] rotate-[-2deg] z-10 pointer-events-none" />
+
+                    {/* Corner crop brackets */}
+                    <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 border-t border-l border-violet-500/30 pointer-events-none" />
+                    <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 border-t border-r border-violet-500/30 pointer-events-none" />
+                    <div className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 border-b border-l border-violet-500/30 pointer-events-none" />
+                    <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 border-b border-r border-violet-500/30 pointer-events-none" />
+
+                    {/* Photo frame wrapper */}
+                    <div className="p-0.5 bg-[#09090D] border border-white/5 rounded-lg aspect-[4/5] relative overflow-hidden">
                       <img
                         src={sub.photoUrl}
                         alt="Submission"
-                        className="w-full h-full object-cover grayscale brightness-90 hover:grayscale-0 transition-all duration-500"
+                        className="w-full h-full object-cover rounded grayscale brightness-90 hover:grayscale-0 hover:brightness-100 transition-all duration-500"
                       />
-                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/75 backdrop-blur-md rounded text-[9px] font-mono text-zinc-300">
+                      
+                      {/* Name tag */}
+                      <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/75 backdrop-blur-md rounded text-[8px] font-mono text-zinc-300 border border-white/5">
                         {sub.playerName}
                       </div>
 
                       {/* Display face detection tags */}
                       {sub.detectedPlayers &&
                         sub.detectedPlayers.length > 1 && (
-                          <div className="absolute bottom-2 left-2 right-2 px-1.5 py-0.5 bg-indigo-950/80 backdrop-blur-md rounded text-[8px] font-mono text-indigo-300 border border-indigo-500/20 truncate">
+                          <div className="absolute bottom-1.5 left-1.5 right-1.5 px-1.5 py-0.5 bg-indigo-950/80 backdrop-blur-md rounded text-[7px] font-mono text-indigo-300 border border-indigo-500/20 truncate">
                             👥 {sub.detectedPlayers.join(", ")}
                           </div>
                         )}
                     </div>
-                    <p className="mt-2 text-[10px] font-serif italic text-zinc-400 line-clamp-2">
-                      "{sub.answer}"
-                    </p>
+                    
+                    <div className="mt-2.5 space-y-1.5">
+                      <p className="text-[10px] font-serif italic text-zinc-400 line-clamp-2 leading-relaxed">
+                        "{sub.answer}"
+                      </p>
+                      
+                      {/* CSS Barcode & brand footer */}
+                      <div className="flex justify-between items-center pt-1 border-t border-white/5 opacity-40 text-[7px] font-mono">
+                        <div className="flex items-center gap-[0.5px]">
+                          <div className="w-[1px] h-2 bg-white"></div>
+                          <div className="w-[0.5px] h-2 bg-white"></div>
+                          <div className="w-[1.5px] h-2 bg-white"></div>
+                          <div className="w-[0.5px] h-2 bg-white"></div>
+                          <div className="w-[1px] h-2 bg-white"></div>
+                        </div>
+                        <span className="font-serif italic">titik.temu</span>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -708,16 +735,23 @@ export const HostView: React.FC = () => {
               <div
                 key={idx}
                 onClick={() => setSelectedSub(sub)}
-                className="break-inside-avoid bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-xl hover:shadow-[0_10px_30px_rgba(99,102,241,0.25)] hover:scale-[1.03] transition-all duration-300 cursor-pointer flex flex-col justify-between group relative overflow-hidden"
+                className="break-inside-avoid bg-[#12121A]/80 border border-white/5 hover:border-violet-500/40 rounded-2xl p-4 shadow-xl hover:shadow-[0_12px_40px_rgba(139,92,246,0.22)] hover:scale-[1.03] transition-all duration-300 cursor-pointer flex flex-col justify-between group relative overflow-hidden"
               >
                 {/* Visual Polaroid Tape Indicator */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-5 bg-white/10 backdrop-blur-md border border-white/20 rotate-[-3deg] z-10 opacity-70 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute top-[16px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-4 bg-white/10 border-l border-r border-dashed border-white/20 backdrop-blur-[2px] rotate-[-2deg] z-10 pointer-events-none shadow-[0_1px_3px_rgba(0,0,0,0.1)]" />
 
-                <div className="aspect-[4/5] bg-black rounded-lg overflow-hidden relative">
+                {/* Corner crop brackets */}
+                <div className="absolute top-2 left-2 w-2 h-2 border-t border-l border-violet-500/30 pointer-events-none" />
+                <div className="absolute top-2 right-2 w-2 h-2 border-t border-r border-violet-500/30 pointer-events-none" />
+                <div className="absolute bottom-2 left-2 w-2 h-2 border-b border-l border-violet-500/30 pointer-events-none" />
+                <div className="absolute bottom-2 right-2 w-2 h-2 border-b border-r border-violet-500/30 pointer-events-none" />
+
+                {/* Photo frame wrapper */}
+                <div className="p-1 bg-[#09090D] border border-white/5 rounded-xl aspect-[4/5] relative overflow-hidden group-hover:shadow-[0_0_15px_rgba(99,102,241,0.2)] transition-shadow duration-300">
                   <img
                     src={sub.photoUrl}
                     alt="Polaroid submission"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover rounded-lg transition-transform duration-500 group-hover:scale-105"
                   />
 
                   {/* Face recognition tags overlay */}
@@ -728,17 +762,30 @@ export const HostView: React.FC = () => {
                   )}
                 </div>
 
-                <div className="mt-4 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase">
+                {/* Card metadata & text */}
+                <div className="mt-4 space-y-3">
+                  {/* Challenge capsule & stamp */}
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="px-2.5 py-0.5 bg-violet-950/40 border border-violet-500/30 text-violet-300 rounded-full text-[8px] font-mono tracking-wider font-semibold uppercase truncate max-w-[130px]">
                       {challengeTitle}
                     </span>
-                    <span className="text-xs font-serif italic text-indigo-300 font-semibold">
+                    
+                    {/* Approved Stamp */}
+                    <div className="w-7 h-7 rounded-full border border-dashed border-rose-500/40 flex items-center justify-center text-[5px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/5 flex-shrink-0">
+                      APPROVED
+                    </div>
+                  </div>
+
+                  {/* Player name */}
+                  <div className="flex justify-between items-baseline gap-2">
+                    <span className="text-xs font-serif italic text-white font-bold truncate">
                       {sub.playerName}
                     </span>
                   </div>
-                  <div className="flex justify-between items-start gap-2 border-t border-white/5 pt-2">
-                    <p className="text-xs font-sans text-zinc-300 italic leading-relaxed flex-grow">
+
+                  {/* Answer section */}
+                  <div className="flex justify-between items-start gap-2 border-t border-white/5 pt-2.5">
+                    <p className="text-[11px] font-sans text-zinc-300 italic leading-relaxed line-clamp-2 flex-grow">
                       "{sub.answer}"
                     </p>
                     <button
@@ -764,6 +811,23 @@ export const HostView: React.FC = () => {
                       </svg>
                     </button>
                   </div>
+
+                  {/* Barcode & Brand footer */}
+                  <div className="flex justify-between items-center pt-1 border-t border-white/5 opacity-50">
+                    {/* CSS Barcode */}
+                    <div className="flex items-center gap-[1px]">
+                      <div className="w-[1.5px] h-2.5 bg-white"></div>
+                      <div className="w-[1px] h-2.5 bg-white"></div>
+                      <div className="w-[2.5px] h-2.5 bg-white"></div>
+                      <div className="w-[1px] h-2.5 bg-white"></div>
+                      <div className="w-[1.5px] h-2.5 bg-white"></div>
+                      <div className="w-[3px] h-2.5 bg-white"></div>
+                      <div className="w-[1px] h-2.5 bg-white"></div>
+                    </div>
+                    <span className="text-[8px] font-serif italic text-zinc-500">
+                      titik.temu
+                    </span>
+                  </div>
                 </div>
               </div>
             );
@@ -778,33 +842,76 @@ export const HostView: React.FC = () => {
           onClick={() => setSelectedSub(null)}
         >
           <div
-            className="max-w-2xl w-full bg-zinc-950 border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col md:flex-row gap-6 relative"
+            className="max-w-2xl w-full bg-[#12121A]/95 border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col md:flex-row gap-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setSelectedSub(null)}
-              className="absolute top-4 right-4 text-zinc-500 hover:text-white font-mono text-xs"
+              className="absolute top-4 right-4 text-zinc-500 hover:text-white font-mono text-xs z-20"
             >
               ✕ Tutup
             </button>
 
-            <div className="w-full md:w-1/2 aspect-[4/5] bg-black rounded-2xl overflow-hidden shadow-inner">
-              <img
-                src={selectedSub.photoUrl}
-                alt="Detail"
-                className="w-full h-full object-cover"
-              />
+            {/* Left side: Premium Photobooth Card preview */}
+            <div className="w-full md:w-1/2 bg-[#12121A] border border-white/5 rounded-2xl p-4 shadow-xl relative overflow-hidden flex flex-col justify-between">
+              {/* Visual Polaroid Tape */}
+              <div className="absolute top-[16px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-4 bg-white/10 border-l border-r border-dashed border-white/20 backdrop-blur-[2px] rotate-[-2deg] z-10 pointer-events-none shadow-[0_1px_3px_rgba(0,0,0,0.1)]" />
+
+              {/* Corner crop brackets */}
+              <div className="absolute top-2 left-2 w-2 h-2 border-t border-l border-violet-500/30 pointer-events-none" />
+              <div className="absolute top-2 right-2 w-2 h-2 border-t border-r border-violet-500/30 pointer-events-none" />
+              <div className="absolute bottom-2 left-2 w-2 h-2 border-b border-l border-violet-500/30 pointer-events-none" />
+              <div className="absolute bottom-2 right-2 w-2 h-2 border-b border-r border-violet-500/30 pointer-events-none" />
+
+              {/* Photo frame wrapper */}
+              <div className="p-1 bg-[#09090D] border border-white/5 rounded-xl aspect-[4/5] relative overflow-hidden">
+                <img
+                  src={selectedSub.photoUrl}
+                  alt="Detail"
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              </div>
+
+              {/* Barcode & Brand footer */}
+              <div className="flex justify-between items-center pt-3 mt-2 border-t border-white/5 opacity-60">
+                {/* CSS Barcode */}
+                <div className="flex items-center gap-[1px]">
+                  <div className="w-[1.5px] h-2.5 bg-white"></div>
+                  <div className="w-[1px] h-2.5 bg-white"></div>
+                  <div className="w-[2.5px] h-2.5 bg-white"></div>
+                  <div className="w-[1px] h-2.5 bg-white"></div>
+                  <div className="w-[1.5px] h-2.5 bg-white"></div>
+                  <div className="w-[3px] h-2.5 bg-white"></div>
+                  <div className="w-[1px] h-2.5 bg-white"></div>
+                </div>
+                
+                <span className="text-[8px] font-mono text-zinc-500 tracking-wider">
+                  APPROVED TRPL-BONDING
+                </span>
+                
+                <span className="text-[9px] font-serif italic text-zinc-400">
+                  titik.temu
+                </span>
+              </div>
             </div>
 
             <div className="w-full md:w-1/2 flex flex-col justify-between py-2">
               <div className="space-y-4">
-                <div>
-                  <span className="text-[10px] font-mono text-indigo-400 tracking-wider">
-                    KARYA OLEH
-                  </span>
-                  <h3 className="text-xl font-serif text-white italic mt-0.5">
-                    {selectedSub.playerName}
-                  </h3>
+                <div className="flex justify-between items-start gap-4">
+                  <div>
+                    <span className="text-[10px] font-mono text-indigo-400 tracking-wider">
+                      KARYA OLEH
+                    </span>
+                    <h3 className="text-2xl font-serif text-white italic font-bold mt-0.5">
+                      {selectedSub.playerName}
+                    </h3>
+                  </div>
+                  
+                  {/* Approved Stamp */}
+                  <div className="w-10 h-10 rounded-full border-2 border-dashed border-rose-500/50 flex flex-col items-center justify-center text-[7px] font-mono text-rose-400 rotate-[-12deg] bg-rose-950/10 font-bold flex-shrink-0">
+                    <span>TRPL</span>
+                    <span className="text-[6px]">APPROVED</span>
+                  </div>
                 </div>
 
                 {/* AI match layout */}
@@ -832,9 +939,12 @@ export const HostView: React.FC = () => {
                   <span className="text-[10px] font-mono text-rose-400 tracking-wider">
                     JAWABAN DEEP DI FORUM
                   </span>
-                  <p className="text-sm font-sans text-zinc-300 leading-relaxed italic mt-1 bg-white/5 border border-white/5 rounded-xl p-4">
-                    "{selectedSub.answer}"
-                  </p>
+                  <div className="relative bg-[#181825] border border-white/5 rounded-2xl p-4 shadow-inner mt-1">
+                    <span className="absolute top-1 left-2 text-violet-500/20 font-serif italic text-4xl select-none">“</span>
+                    <p className="text-xs font-sans text-zinc-300 leading-relaxed italic relative pl-4">
+                      "{selectedSub.answer}"
+                    </p>
+                  </div>
                 </div>
 
                 <button
@@ -845,7 +955,7 @@ export const HostView: React.FC = () => {
                       chal ? chal.title : undefined,
                     );
                   }}
-                  className="w-full mt-2 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5"
+                  className="w-full mt-2 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg hover:shadow-[0_4px_20px_rgba(139,92,246,0.3)] transition-all flex items-center justify-center gap-1.5"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -864,8 +974,9 @@ export const HostView: React.FC = () => {
                 </button>
               </div>
 
-              <div className="text-[9px] font-mono text-zinc-600">
-                Bonding Gallery • Room: {pin}
+              <div className="text-[9px] font-mono text-zinc-500 mt-4 border-t border-white/5 pt-3 flex justify-between items-center">
+                <span>Bonding Gallery • Room: {pin}</span>
+                <span>TANTANGAN #{selectedSub.challengeId}</span>
               </div>
             </div>
           </div>
